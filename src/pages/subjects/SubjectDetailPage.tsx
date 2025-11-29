@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { subjectService, teacherService, studentService } from '@/services/api';
 import type { Subject } from '@/types';
-import { ArrowLeft, Edit, Loader2, Users, UserCheck } from 'lucide-react';
+import { ArrowLeft, Edit, Loader2, Users, UserCheck, BookOpen, GraduationCap } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuthStore } from '@/store/authStore';
 
@@ -249,6 +249,60 @@ export default function SubjectDetailPage() {
               </div>
               <Badge>{subject._count?.teacher_subject_junctions || 0}</Badge>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Modules */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Modules</CardTitle>
+            <CardDescription>Course content and learning materials</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {user?.role === 'TEACHER' || user?.role === 'ADMIN' ? (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <BookOpen className="h-5 w-5 text-muted-foreground" />
+                  <span className="text-sm font-medium">Manage Modules</span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate(`/dashboard/subjects/${subject.id}/modules`)}
+                >
+                  View Modules
+                </Button>
+              </div>
+            ) : user?.role === 'STUDENT' ? (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <GraduationCap className="h-5 w-5 text-muted-foreground" />
+                  <span className="text-sm font-medium">Study Modules</span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate(`/dashboard/subjects/${subject.id}/student-modules`)}
+                >
+                  Start Learning
+                </Button>
+              </div>
+            ) : null}
+            {user?.role === 'TEACHER' || user?.role === 'ADMIN' ? (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Users className="h-5 w-5 text-muted-foreground" />
+                  <span className="text-sm font-medium">Student Progress</span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate(`/dashboard/subjects/${subject.id}/progress`)}
+                >
+                  View Progress
+                </Button>
+              </div>
+            ) : null}
           </CardContent>
         </Card>
 

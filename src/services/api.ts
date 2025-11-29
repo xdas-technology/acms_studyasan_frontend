@@ -25,6 +25,14 @@ import type {
   UpdateBoardData,
   CreateClassData,
   UpdateClassData,
+  Module,
+  ModuleContent,
+  StudentModuleProgress,
+  CreateModuleData,
+  UpdateModuleData,
+  AddTextContentData,
+  UpdateContentData,
+  UpdateProgressData,
 } from '@/types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
@@ -394,6 +402,107 @@ export const enrollmentService = {
 
   delete: async (id: number): Promise<void> => {
     await api.delete(`/enrollments/${id}`);
+  },
+};
+
+export const moduleService = {
+  // Get all modules for a subject
+  getModulesBySubject: async (subjectId: number): Promise<{ success: boolean; data: Module[] }> => {
+    const response = await api.get(`/subjects/${subjectId}/modules`);
+    // Backend returns { success, data: { modules: [...] } }
+    const modules = response.data.data?.modules || [];
+    return { success: response.data.success, data: modules };
+  },
+
+  // Get a specific module
+  getModuleById: async (subjectId: number, moduleId: number): Promise<{ success: boolean; data: Module }> => {
+    const response = await api.get(`/subjects/${subjectId}/modules/${moduleId}`);
+    return response.data;
+  },
+
+  // Create a new module
+  createModule: async (subjectId: number, data: CreateModuleData): Promise<{ success: boolean; data: Module }> => {
+    const response = await api.post(`/subjects/${subjectId}/modules`, data);
+    return response.data;
+  },
+
+  // Update a module
+  updateModule: async (subjectId: number, moduleId: number, data: UpdateModuleData): Promise<{ success: boolean; data: Module }> => {
+    const response = await api.put(`/subjects/${subjectId}/modules/${moduleId}`, data);
+    return response.data;
+  },
+
+  // Delete a module
+  deleteModule: async (subjectId: number, moduleId: number): Promise<{ success: boolean; message: string }> => {
+    const response = await api.delete(`/subjects/${subjectId}/modules/${moduleId}`);
+    return response.data;
+  },
+
+  // Upload content files to a module
+  uploadContent: async (subjectId: number, moduleId: number, files: FileList): Promise<{ success: boolean; data: ModuleContent[] }> => {
+    const formData = new FormData();
+    Array.from(files).forEach((file) => {
+      formData.append('files', file);
+    });
+
+    const response = await api.post(`/subjects/${subjectId}/modules/${moduleId}/content/upload`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  // Add text content to a module
+  addTextContent: async (subjectId: number, moduleId: number, data: AddTextContentData): Promise<{ success: boolean; data: ModuleContent }> => {
+    const response = await api.post(`/subjects/${subjectId}/modules/${moduleId}/content/text`, data);
+    return response.data;
+  },
+
+  // Update content
+  updateContent: async (subjectId: number, moduleId: number, contentId: number, data: UpdateContentData): Promise<{ success: boolean; data: ModuleContent }> => {
+    const response = await api.put(`/subjects/${subjectId}/modules/${moduleId}/content/${contentId}`, data);
+    return response.data;
+  },
+
+  // Remove content from a module
+  removeContent: async (subjectId: number, moduleId: number, contentId: number): Promise<{ success: boolean; message: string }> => {
+    const response = await api.delete(`/subjects/${subjectId}/modules/${moduleId}/content/${contentId}`);
+    return response.data;
+  },
+
+  // Reorder modules
+  reorderModules: async (subjectId: number, moduleOrders: { module_id: number; order: number }[]): Promise<{ success: boolean; data: Module[] }> => {
+    const response = await api.put(`/subjects/${subjectId}/modules/reorder`, { module_orders: moduleOrders });
+    return response.data;
+  },
+};
+
+export const progressService = {
+  // Get student's progress for a subject (Student self-service)
+  getStudentProgress: async (studentId: number, subjectId: number): Promise<{ success: boolean; data: StudentModuleProgress[] }> => {
+    // Use the student self-service endpoint
+    const response = await api.get(`/my-progress/subjects/${subjectId}`);
+    return { success: response.data.success, data: response.data.data?.modules_progress || [] };
+  },
+
+  // Get all students' progress for a subject (for teachers)
+  getSubjectProgress: async (subjectId: number): Promise<{ success: boolean; data: any }> => {
+    const response = await api.get(`/progress/subjects/${subjectId}/stats`);
+    // Backend returns { success, data: { subject_id, students: [...] } }
+    return response.data;
+  },
+
+  // Update student's progress for a module (Student self-service)
+  updateProgress: async (studentId: number, subjectId: number, moduleId: number, data: UpdateProgressData): Promise<{ success: boolean; data: StudentModuleProgress }> => {
+    const response = await api.put(`/my-progress/subjects/${subjectId}/modules/${moduleId}`, data);
+    return response.data;
+  },
+
+  // Get progress statistics for a subject
+  getProgressStats: async (subjectId: number): Promise<{ success: boolean; data: { totalStudents: number; completedModules: { [moduleId: number]: number }; averageProgress: number } }> => {
+    const response = await api.get(`/progress/subjects/${subjectId}/stats`);
+    return response.data;
   },
 };
 

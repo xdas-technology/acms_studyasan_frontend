@@ -22,6 +22,12 @@ import SubjectsPage from '@/pages/subjects/SubjectsPage';
 import CreateSubjectPage from '@/pages/subjects/CreateSubjectPage';
 import EditSubjectPage from '@/pages/subjects/EditSubjectPage';
 import SubjectDetailPage from '@/pages/subjects/SubjectDetailPage';
+import SubjectModulesPage from '@/pages/subjects/SubjectModulesPage';
+import CreateModulePage from '@/pages/subjects/CreateModulePage';
+import EditModulePage from '@/pages/subjects/EditModulePage';
+import StudentModulesPage from '@/pages/subjects/StudentModulesPage';
+import StudyModulePage from '@/pages/subjects/StudyModulePage';
+import SubjectProgressPage from '@/pages/subjects/SubjectProgressPage';
 
 // Enrollment imports
 import EnrollmentsPage from '@/pages/enrollments/EnrollmentsPage';
@@ -109,6 +115,12 @@ function App() {
           <Route path="subjects/new" element={<CreateSubjectPage />} />
           <Route path="subjects/:id" element={<SubjectDetailPage />} />
           <Route path="subjects/:id/edit" element={<EditSubjectPage />} />
+          <Route path="subjects/:subjectId/modules" element={<SubjectModulesPage />} />
+          <Route path="subjects/:subjectId/modules/create" element={<CreateModulePage />} />
+          <Route path="subjects/:subjectId/modules/:moduleId/edit" element={<EditModulePage />} />
+          <Route path="subjects/:subjectId/student-modules" element={<StudentModulesPage />} />
+          <Route path="subjects/:subjectId/modules/:moduleId/study" element={<StudyModulePage />} />
+          <Route path="subjects/:subjectId/progress" element={<SubjectProgressPage />} />
           
           {/* Enrollment Routes */}
           <Route path="enrollments" element={<EnrollmentsPage />} />

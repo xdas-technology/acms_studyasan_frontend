@@ -307,3 +307,182 @@ export interface BulkEnrollmentData {
   student_ids: number[];
   subject_id: number;
 }
+
+export interface ClassSession {
+  id: number;
+  teacher_id: number;
+  subject_id: number;
+  class_id: number | null;
+  board_id: number | null;
+  mode: 'ONLINE' | 'OFFLINE';
+  location: string | null;
+  meeting_link: string | null;
+  start_time: string;
+  end_time: string;
+  is_recurring: boolean;
+  recurrence_rule: any;
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+  teacher?: {
+    id: number;
+    user: {
+      id: number;
+      name: string;
+      email: string;
+    };
+  };
+  subject?: {
+    id: number;
+    name: string;
+  };
+  class?: {
+    id: number;
+    name: string;
+  } | null;
+  board?: {
+    id: number;
+    name: string;
+  } | null;
+  creator?: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  _count?: {
+    attendances: number;
+  };
+  attendances?: ClassSessionAttendance[];
+}
+
+export interface ClassSessionAttendance {
+  id: number;
+  class_session_id: number;
+  user_id: number;
+  role: 'TEACHER' | 'STUDENT';
+  joined_at: string | null;
+  left_at: string | null;
+  duration_minutes: number | null;
+  created_at: string;
+  updated_at: string;
+  user?: {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+  };
+  class_session?: ClassSession;
+}
+
+export interface CreateClassSessionData {
+  teacher_id: number;
+  subject_id: number;
+  class_id?: number | null;
+  board_id?: number | null;
+  mode: 'ONLINE' | 'OFFLINE';
+  location?: string | null;
+  meeting_link?: string | null;
+  start_time: string;
+  end_time: string;
+  is_recurring?: boolean;
+  recurrence_rule?: any;
+}
+
+export interface UpdateClassSessionData {
+  teacher_id?: number;
+  subject_id?: number;
+  class_id?: number | null;
+  board_id?: number | null;
+  mode?: 'ONLINE' | 'OFFLINE';
+  location?: string | null;
+  meeting_link?: string | null;
+  start_time?: string;
+  end_time?: string;
+  is_recurring?: boolean;
+  recurrence_rule?: any;
+}
+
+export interface RecordAttendanceData {
+  class_session_id: number;
+  user_id: number;
+  role: 'TEACHER' | 'STUDENT';
+  joined_at?: string;
+  left_at?: string;
+}
+
+export interface UpdateAttendanceData {
+  joined_at?: string;
+  left_at?: string;
+}
+
+// Module-related types
+export interface ModuleContent {
+  content_id: number;
+  type: 'text' | 'image' | 'video' | 'pdf' | 'document';
+  text_content?: string;
+  file_name?: string;
+  file_size?: number;
+  s3_key?: string;
+  s3_url?: string;
+  uploaded_at?: string;
+}
+
+export interface Module {
+  module_id: number;
+  title: string;
+  description: string;
+  order: number;
+  content: ModuleContent[];
+  estimated_time_minutes: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface StudentModuleProgress {
+  id: number;
+  student_id: number;
+  subject_id: number;
+  module_id: number;
+  status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
+  started_at: string | null;
+  completed_at: string | null;
+  time_spent_minutes: number;
+  created_at: string;
+  updated_at: string;
+  student?: {
+    id: number;
+    user: {
+      id: number;
+      name: string;
+      email: string;
+    };
+  };
+  module?: Module;
+}
+
+export interface CreateModuleData {
+  title: string;
+  description: string;
+  estimated_time_minutes?: number;
+}
+
+export interface UpdateModuleData {
+  title?: string;
+  description?: string;
+  estimated_time_minutes?: number;
+  order?: number;
+}
+
+export interface AddTextContentData {
+  text_content: string;
+}
+
+export interface UpdateContentData {
+  type?: 'text' | 'image' | 'video' | 'pdf' | 'document';
+  text_content?: string;
+}
+
+export interface UpdateProgressData {
+  status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
+  time_spent_minutes?: number;
+}
