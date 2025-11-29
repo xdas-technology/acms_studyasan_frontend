@@ -1,0 +1,400 @@
+import axios, { AxiosError } from 'axios';
+import type {
+  LoginCredentials,
+  AuthResponse,
+  RegisterData,
+  ApiError,
+  PaginatedResponse,
+  Notification,
+  Student,
+  CreateStudentData,
+  UpdateStudentData,
+  Board,
+  Class,
+  Teacher,
+  Subject,
+  CreateTeacherData,
+  UpdateTeacherData,
+  CreateSubjectData,
+  UpdateSubjectData,
+  TeacherSubjectAssignment,
+  Enrollment,
+  CreateEnrollmentData,
+  BulkEnrollmentData,
+  CreateBoardData,
+  UpdateBoardData,
+  CreateClassData,
+  UpdateClassData,
+} from '@/types';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+const api = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Request interceptor to add auth token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor to handle errors
+api.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError<ApiError>) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+export const authService = {
+  login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
+    const response = await api.post<AuthResponse>('/auth/login', credentials);
+    return response.data;
+  },
+
+  register: async (data: RegisterData): Promise<AuthResponse> => {
+    const response = await api.post<AuthResponse>('/auth/register', data);
+    return response.data;
+  },
+
+  logout: () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  },
+};
+
+export const notificationService = {
+  getAll: async (params?: {
+    page?: number;
+    limit?: number;
+    is_read?: boolean;
+    type?: string;
+  }): Promise<PaginatedResponse<Notification>> => {
+    const response = await api.get<PaginatedResponse<Notification>>(
+      '/notifications',
+      { params }
+    );
+    return response.data;
+  },
+
+  markAsRead: async (id: number): Promise<void> => {
+    await api.patch(`/notifications/${id}/read`);
+  },
+
+  markAllAsRead: async (): Promise<void> => {
+    await api.patch('/notifications/read-all');
+  },
+
+  delete: async (id: number): Promise<void> => {
+    await api.delete(`/notifications/${id}`);
+  },
+};
+
+// ... previous imports and code ...
+
+export const studentService = {
+  getAll: async (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    class_id?: number;
+    board_id?: number;
+    gender?: string;
+  }): Promise<PaginatedResponse<Student>> => {
+    const response = await api.get<PaginatedResponse<Student>>('/students', {
+      params,
+    });
+    return response.data;
+  },
+
+  getById: async (id: number): Promise<{ success: boolean; data: Student }> => {
+    const response = await api.get(`/students/${id}`);
+    return response.data;
+  },
+
+  create: async (data: CreateStudentData): Promise<{ success: boolean; data: Student }> => {
+    // First create the user
+    const userResponse = await api.post('/auth/register', {
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      password: data.password,
+      role: 'STUDENT',
+    });
+
+    // Then create the student profile
+    const studentResponse = await api.post('/students', {
+      user_id: userResponse.data.data.user.id,
+      class_id: data.class_id,
+      board_id: data.board_id,
+      date_of_birth: data.date_of_birth,
+      gender: data.gender,
+      school: data.school,
+    });
+
+    return studentResponse.data;
+  },
+
+  update: async (
+    id: number,
+    data: UpdateStudentData
+  ): Promise<{ success: boolean; data: Student }> => {
+    const response = await api.put(`/students/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id: number): Promise<void> => {
+    await api.delete(`/students/${id}`);
+  },
+};
+
+export const boardService = {
+  getAll: async (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+  }): Promise<PaginatedResponse<Board>> => {
+    const response = await api.get<PaginatedResponse<Board>>('/boards', {
+      params,
+    });
+    return response.data;
+  },
+
+  getById: async (id: number): Promise<{ success: boolean; data: Board }> => {
+    const response = await api.get(`/boards/${id}`);
+    return response.data;
+  },
+
+  create: async (data: CreateBoardData): Promise<{ success: boolean; data: Board }> => {
+    const response = await api.post('/boards', data);
+    return response.data;
+  },
+
+  update: async (
+    id: number,
+    data: UpdateBoardData
+  ): Promise<{ success: boolean; data: Board }> => {
+    const response = await api.put(`/boards/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id: number): Promise<void> => {
+    await api.delete(`/boards/${id}`);
+  },
+};
+
+export const classService = {
+  getAll: async (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+  }): Promise<PaginatedResponse<Class>> => {
+    const response = await api.get<PaginatedResponse<Class>>('/classes', {
+      params,
+    });
+    return response.data;
+  },
+
+  getById: async (id: number): Promise<{ success: boolean; data: Class }> => {
+    const response = await api.get(`/classes/${id}`);
+    return response.data;
+  },
+
+  create: async (data: CreateClassData): Promise<{ success: boolean; data: Class }> => {
+    const response = await api.post('/classes', data);
+    return response.data;
+  },
+
+  update: async (
+    id: number,
+    data: UpdateClassData
+  ): Promise<{ success: boolean; data: Class }> => {
+    const response = await api.put(`/classes/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id: number): Promise<void> => {
+    await api.delete(`/classes/${id}`);
+  },
+};
+
+export const teacherService = {
+  getAll: async (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    gender?: string;
+  }): Promise<PaginatedResponse<Teacher>> => {
+    const response = await api.get<PaginatedResponse<Teacher>>('/teachers', {
+      params,
+    });
+    return response.data;
+  },
+
+  getById: async (id: number): Promise<{ success: boolean; data: Teacher }> => {
+    const response = await api.get(`/teachers/${id}`);
+    return response.data;
+  },
+
+  create: async (data: CreateTeacherData): Promise<{ success: boolean; data: Teacher }> => {
+    // First create the user
+    const userResponse = await api.post('/auth/register', {
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      password: data.password,
+      role: 'TEACHER',
+    });
+
+    // Then create the teacher profile
+    const teacherResponse = await api.post('/teachers', {
+      user_id: userResponse.data.data.user.id,
+      salary: data.salary,
+      qualification: data.qualification,
+      gender: data.gender,
+      experience: data.experience,
+    });
+
+    return teacherResponse.data;
+  },
+
+  update: async (
+    id: number,
+    data: UpdateTeacherData
+  ): Promise<{ success: boolean; data: Teacher }> => {
+    const response = await api.put(`/teachers/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id: number): Promise<void> => {
+    await api.delete(`/teachers/${id}`);
+  },
+
+  assignSubject: async (
+    data: TeacherSubjectAssignment
+  ): Promise<{ success: boolean; data: any }> => {
+    const response = await api.post('/teachers/assign-subject', data);
+    return response.data;
+  },
+
+  removeSubject: async (junctionId: number): Promise<void> => {
+    await api.delete(`/teachers/remove-subject/${junctionId}`);
+  },
+};
+
+export const subjectService = {
+  getAll: async (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    class_id?: number;
+    board_id?: number;
+    is_course?: boolean;
+    teacher_id?: number;
+    student_id?: number;
+  }): Promise<PaginatedResponse<Subject>> => {
+    const response = await api.get<PaginatedResponse<Subject>>('/subjects', {
+      params,
+    });
+    return response.data;
+  },
+
+  getById: async (id: number): Promise<{ success: boolean; data: Subject }> => {
+    const response = await api.get(`/subjects/${id}`);
+    return response.data;
+  },
+
+  create: async (data: CreateSubjectData): Promise<{ success: boolean; data: Subject }> => {
+    const formData = new FormData();
+    formData.append('name', data.name);
+    if (data.class_id !== null) formData.append('class_id', data.class_id.toString());
+    if (data.board_id !== null) formData.append('board_id', data.board_id.toString());
+    if (data.syllabus !== null) formData.append('syllabus', JSON.stringify(data.syllabus));
+    formData.append('is_course', data.is_course.toString());
+    if (data.cover_image) formData.append('cover_image', data.cover_image);
+
+    const response = await api.post('/subjects', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  update: async (
+    id: number,
+    data: UpdateSubjectData
+  ): Promise<{ success: boolean; data: Subject }> => {
+    const formData = new FormData();
+    if (data.name !== undefined) formData.append('name', data.name);
+    if (data.class_id !== undefined) formData.append('class_id', data.class_id !== null ? data.class_id.toString() : '');
+    if (data.board_id !== undefined) formData.append('board_id', data.board_id !== null ? data.board_id.toString() : '');
+    if (data.syllabus !== undefined) formData.append('syllabus', JSON.stringify(data.syllabus));
+    if (data.is_course !== undefined) formData.append('is_course', data.is_course.toString());
+    if (data.cover_image !== undefined && data.cover_image) formData.append('cover_image', data.cover_image);
+
+    const response = await api.put(`/subjects/${id}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  delete: async (id: number): Promise<void> => {
+    await api.delete(`/subjects/${id}`);
+  },
+};
+
+export const enrollmentService = {
+  getAll: async (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    student_id?: number;
+    subject_id?: number;
+  }): Promise<PaginatedResponse<Enrollment>> => {
+    const response = await api.get<PaginatedResponse<Enrollment>>('/enrollments', {
+      params,
+    });
+    return response.data;
+  },
+
+  getById: async (id: number): Promise<{ success: boolean; data: Enrollment }> => {
+    const response = await api.get(`/enrollments/${id}`);
+    return response.data;
+  },
+
+  create: async (data: CreateEnrollmentData): Promise<{ success: boolean; data: Enrollment }> => {
+    const response = await api.post('/enrollments', data);
+    return response.data;
+  },
+
+  bulkCreate: async (data: BulkEnrollmentData): Promise<{ success: boolean; data: Enrollment[] }> => {
+    const response = await api.post('/enrollments/bulk', data);
+    return response.data;
+  },
+
+  delete: async (id: number): Promise<void> => {
+    await api.delete(`/enrollments/${id}`);
+  },
+};
+
+export default api;
