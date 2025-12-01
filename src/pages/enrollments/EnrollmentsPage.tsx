@@ -74,8 +74,9 @@ const EnrollmentsPage: React.FC = () => {
   const fetchSubjects = async () => {
     try {
       const params: any = { limit: 100 };
-      if (isTeacher) {
-        params.teacher_id = user?.id;
+      if (isTeacher && user?.id) {
+        params.user_id = user.id;
+        params.role = user.role;
       }
       const response = await subjectService.getAll(params);
       setSubjects(response.data.data);

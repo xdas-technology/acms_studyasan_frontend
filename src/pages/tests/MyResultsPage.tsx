@@ -4,8 +4,9 @@ import { CheckCircle, XCircle, Clock, FileText, Calendar } from 'lucide-react';
 import { testAttemptService, subjectService } from '@/services/api';
 import type { TestAttempt, Subject } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useAuthStore } from '@/store/authStore';
 
 export default function MyResultsPage() {
   const [attempts, setAttempts] = useState<TestAttempt[]>([]);
@@ -13,6 +14,7 @@ export default function MyResultsPage() {
   const [loading, setLoading] = useState(true);
   const [selectedSubject, setSelectedSubject] = useState<number | null>(null);
   const navigate = useNavigate();
+  const { user } = useAuthStore();
 
   useEffect(() => {
     fetchSubjects();
@@ -21,7 +23,13 @@ export default function MyResultsPage() {
 
   const fetchSubjects = async () => {
     try {
-      const response = await subjectService.getAll({});
+      const params: any = {};
+      // For students, only fetch subjects they are enrolled in
+      if (user?.role === 'STUDENT' && user?.id) {
+        params.user_id = user.id;
+        params.role = user.role;
+      }
+      const response = await subjectService.getAll(params);
       setSubjects(response.data.data);
     } catch (error) {
       console.error('Error fetching subjects:', error);

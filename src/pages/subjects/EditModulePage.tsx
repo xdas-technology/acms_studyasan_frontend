@@ -282,7 +282,7 @@ export default function EditModulePage() {
                             <p className="font-medium truncate">
                               {content.type === 'text' 
                                 ? (content.text_content?.substring(0, 60) + (content.text_content && content.text_content.length > 60 ? '...' : ''))
-                                : content.filename || content.file_name || 'Untitled'}
+                                : content.file_name || 'Untitled'}
                             </p>
                             <p className="text-xs text-gray-500 flex items-center gap-3">
                               <span className="capitalize">{content.type}</span>

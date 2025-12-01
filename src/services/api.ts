@@ -44,6 +44,11 @@ import type {
   GradeTestData,
   Question,
   Answer,
+  Chat,
+  Message,
+  StartChatData,
+  SendMessageData,
+  ChatMessagesResponse,
 } from '@/types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
@@ -316,6 +321,11 @@ export const teacherService = {
   removeSubject: async (junctionId: number): Promise<void> => {
     await api.delete(`/teachers/remove-subject/${junctionId}`);
   },
+
+  getBySubject: async (subjectId: number): Promise<{ success: boolean; data: Teacher[] }> => {
+    const response = await api.get(`/subjects/${subjectId}/teachers`);
+    return response.data;
+  },
 };
 
 export const subjectService = {
@@ -491,7 +501,7 @@ export const moduleService = {
 
 export const progressService = {
   // Get student's progress for a subject (Student self-service)
-  getStudentProgress: async (studentId: number, subjectId: number): Promise<{ success: boolean; data: StudentModuleProgress[] }> => {
+  getStudentProgress: async (_studentId: number, subjectId: number): Promise<{ success: boolean; data: StudentModuleProgress[] }> => {
     // Use the student self-service endpoint
     const response = await api.get(`/my-progress/subjects/${subjectId}`);
     return { success: response.data.success, data: response.data.data?.modules_progress || [] };
@@ -505,7 +515,7 @@ export const progressService = {
   },
 
   // Update student's progress for a module (Student self-service)
-  updateProgress: async (studentId: number, subjectId: number, moduleId: number, data: UpdateProgressData): Promise<{ success: boolean; data: StudentModuleProgress }> => {
+  updateProgress: async (_studentId: number, subjectId: number, moduleId: number, data: UpdateProgressData): Promise<{ success: boolean; data: StudentModuleProgress }> => {
     const response = await api.put(`/my-progress/subjects/${subjectId}/modules/${moduleId}`, data);
     return response.data;
   },
@@ -613,6 +623,56 @@ export const testAttemptService = {
   // Grade test attempt
   gradeAttempt: async (attemptId: number, data: GradeTestData): Promise<{ success: boolean; data: TestAttempt }> => {
     const response = await api.post(`/test-attempts/${attemptId}/grade`, data);
+    return response.data;
+  },
+};
+
+export const chatService = {
+  // Start a new chat
+  startChat: async (data: StartChatData): Promise<{ success: boolean; data: Chat }> => {
+    const response = await api.post('/chats', data);
+    return response.data;
+  },
+
+  // Send a message
+  sendMessage: async (chatId: number, data: SendMessageData, file?: File): Promise<{ success: boolean; data: Message }> => {
+    const formData = new FormData();
+    
+    if (data.content) {
+      formData.append('content', data.content);
+    }
+    
+    if (data.messageType) {
+      formData.append('messageType', data.messageType);
+    }
+    
+    if (file) {
+      formData.append('file', file);
+    }
+
+    const response = await api.post(`/chats/${chatId}/messages`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  // Get chat messages
+  getChatMessages: async (chatId: number, params?: { page?: number; limit?: number }): Promise<ChatMessagesResponse> => {
+    const response = await api.get(`/chats/${chatId}/messages`, { params });
+    return response.data;
+  },
+
+  // Get user chats
+  getUserChats: async (): Promise<{ success: boolean; data: Chat[] }> => {
+    const response = await api.get('/chats');
+    return response.data;
+  },
+
+  // Get all chats (Admin only)
+  getAllChats: async (): Promise<{ success: boolean; data: Chat[] }> => {
+    const response = await api.get('/admin/chats');
     return response.data;
   },
 };

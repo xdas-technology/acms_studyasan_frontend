@@ -7,11 +7,12 @@ import {
   BookOpen,
   GraduationCap,
   UserCheck,
-  Settings,
   LayoutDashboard,
   ClipboardList,
   FileText,
   Award,
+  MessageCircle,
+  MessagesSquare,
 } from 'lucide-react';
 
 interface NavItem {
@@ -53,6 +54,18 @@ const navItems: NavItem[] = [
     roles: ['ADMIN', 'TEACHER', 'STUDENT'],
   },
   {
+    title: 'Chats',
+    href: '/dashboard/chats',
+    icon: MessageCircle,
+    roles: ['ADMIN', 'TEACHER', 'STUDENT'],
+  },
+  {
+    title: 'All Chats',
+    href: '/dashboard/admin/chats',
+    icon: MessagesSquare,
+    roles: ['ADMIN'],
+  },
+  {
     title: 'My Results',
     href: '/tests/my-results',
     icon: Award,
@@ -74,7 +87,7 @@ const navItems: NavItem[] = [
     title: 'Enrollments',
     href: '/dashboard/enrollments',
     icon: GraduationCap,
-    roles: ['ADMIN', 'TEACHER', 'STUDENT'],
+    roles: ['ADMIN'],
   },
 ];
 

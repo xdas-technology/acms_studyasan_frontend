@@ -636,3 +636,72 @@ export interface GradeAnswerData {
 export interface GradeTestData {
   grades: GradeAnswerData[];
 }
+
+// Chat Types
+export interface ChatParticipant {
+  id: number;
+  chat_id: number;
+  user_id: number;
+  joined_at: string;
+  user: {
+    id: number;
+    name: string;
+    email: string;
+    phone: string;
+    role: 'ADMIN' | 'TEACHER' | 'STUDENT';
+    created_at: string;
+    updated_at: string;
+  };
+}
+
+export interface Message {
+  id: number;
+  chat_id: number;
+  sender_id: number;
+  content: string | null;
+  message_type: MessageType;
+  attachment_url: string | null;
+  created_at: string;
+  updated_at: string;
+  sender: {
+    id: number;
+    name: string;
+    email: string;
+  };
+}
+
+export type MessageType = 'TEXT' | 'IMAGE' | 'VIDEO' | 'PDF' | 'FILE';
+
+export interface Chat {
+  id: number;
+  created_at: string;
+  updated_at: string;
+  participants: ChatParticipant[];
+  messages: Message[];
+  _count: {
+    messages: number;
+  };
+}
+
+export interface StartChatData {
+  participantIds: number[];
+}
+
+export interface SendMessageData {
+  content?: string;
+  messageType?: MessageType;
+}
+
+export interface ChatMessagesResponse {
+  success: boolean;
+  message: string;
+  data: {
+    messages: Message[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      pages: number;
+    };
+  };
+}

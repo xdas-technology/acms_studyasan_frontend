@@ -51,9 +51,15 @@ export default function CreateTestPage() {
   const fetchSubjects = async () => {
     try {
       const params: any = {};
+      // For teachers, only fetch subjects they are assigned to
+      if (user?.role === 'TEACHER' && user?.id) {
+        params.user_id = user.id;
+        params.role = user.role;
+      }
       // For students, only fetch subjects they are enrolled in
       if (user?.role === 'STUDENT' && user?.id) {
-        params.student_id = user.id;
+        params.user_id = user.id;
+        params.role = user.role;
       }
       const response = await subjectService.getAll(params);
       setSubjects(response.data.data);

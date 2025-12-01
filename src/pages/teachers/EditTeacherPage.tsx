@@ -22,7 +22,12 @@ export default function EditTeacherPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [teacher, setTeacher] = useState<Teacher | null>(null);
   const [error, setError] = useState('');
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    salary: number | null;
+    qualification: string | null;
+    gender: 'M' | 'F' | 'OTHER' | null;
+    experience: string | null;
+  }>({
     salary: null,
     qualification: null,
     gender: null,

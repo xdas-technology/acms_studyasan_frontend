@@ -30,7 +30,13 @@ export default function TestsPage() {
       const params: any = {};
       // For students, only fetch subjects they are enrolled in
       if (isStudent && user?.id) {
-        params.student_id = user.id;
+        params.user_id = user.id;
+        params.role = user.role;
+      }
+      // For teachers, only fetch subjects they teach
+      if (user?.role === 'TEACHER' && user?.id) {
+        params.user_id = user.id;
+        params.role = user.role;
       }
       const response = await subjectService.getAll(params);
       setSubjects(response.data.data);
@@ -44,6 +50,17 @@ export default function TestsPage() {
       setLoading(true);
       const params: any = {};
       if (selectedSubject) params.subject_id = selectedSubject;
+      
+      // For students, only fetch tests from subjects they are enrolled in
+      if (user?.role === 'STUDENT' && user?.id) {
+        params.user_id = user.id;
+        params.role = user.role;
+      }
+      // For teachers, only fetch tests from subjects they teach
+      if (user?.role === 'TEACHER' && user?.id) {
+        params.user_id = user.id;
+        params.role = user.role;
+      }
       
       const response = await testService.getAll(params);
       setTests(response.data);

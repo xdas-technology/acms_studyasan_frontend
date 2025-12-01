@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, CheckCircle, FileText, Eye, Clock } from 'lucide-react';
+import { ArrowLeft, CheckCircle, FileText, Clock } from 'lucide-react';
 import { moduleService, progressService } from '@/services/api';
 import type { Module, StudentModuleProgress, UpdateProgressData } from '@/types';
 import { useAuthStore } from '@/store/authStore';
@@ -134,7 +134,7 @@ export default function StudyModulePage() {
               controlsList="nodownload" // Disable download button
               className="max-w-full max-h-[600px] w-full"
               onContextMenu={(e) => e.preventDefault()} // Prevent right-click download
-              onError={(e) => {
+              onError={() => {
                 console.error('Video failed to load');
               }}
             >

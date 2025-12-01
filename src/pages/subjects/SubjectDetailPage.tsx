@@ -83,7 +83,7 @@ export default function SubjectDetailPage() {
       // Check permissions for teachers
       if (user?.role === 'TEACHER' && currentTeacherId) {
         const isAssigned = subjectData.teacher_subject_junctions?.some(
-          junction => junction.teacher_id === currentTeacherId
+          junction => junction.teacher.id === currentTeacherId
         );
         if (!isAssigned) {
           navigate('/dashboard/subjects');

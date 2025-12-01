@@ -42,7 +42,13 @@ const CreateEnrollmentPage: React.FC = () => {
 
   const fetchSubjects = async () => {
     try {
-      const response = await subjectService.getAll({ limit: 100 });
+      const params: any = { limit: 100 };
+      // For teachers, only show subjects they are assigned to
+      if (user?.role === 'TEACHER' && user?.id) {
+        params.user_id = user.id;
+        params.role = user.role;
+      }
+      const response = await subjectService.getAll(params);
       setSubjects(response.data.data);
     } catch (error) {
       console.error('Error fetching subjects:', error);

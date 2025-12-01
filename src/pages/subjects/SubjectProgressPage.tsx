@@ -63,11 +63,6 @@ export default function SubjectProgressPage() {
     return student?.modules.find(p => p.module_id === moduleId);
   };
 
-  const calculateStudentProgress = (studentId: number) => {
-    const student = studentProgress.find(sp => sp.student_id === studentId);
-    return student?.average_progress || 0;
-  };
-
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'COMPLETED':

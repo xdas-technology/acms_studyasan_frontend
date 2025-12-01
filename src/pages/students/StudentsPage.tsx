@@ -21,9 +21,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { studentService, boardService, classService } from '@/services/api';
 import type { Student, Board, Class } from '@/types';
-import { Plus, Search, Eye, Edit, Trash2, Loader2, ChevronLeft, ChevronRight, Users } from 'lucide-react';
+import { Plus, Eye, Edit, Trash2, Loader2, ChevronLeft, ChevronRight, Users } from 'lucide-react';
 import DeleteStudentDialog from '@/components/students/DeleteStudentDialog';
-import { format } from 'date-fns';
 
 export default function StudentsPage() {
   const navigate = useNavigate();

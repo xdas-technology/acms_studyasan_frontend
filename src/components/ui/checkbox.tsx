@@ -8,7 +8,6 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
   ({ className, onCheckedChange, ...props }, ref) => {
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
       onCheckedChange?.(event.target.checked);
-      props.onChange?.(event);
     };
 
     return (

@@ -73,13 +73,15 @@ export default function SubjectsPage() {
       if (selectedType) params.is_course = selectedType === 'course';
 
       // If user is a teacher, only show subjects assigned to them
-      if (user?.role === 'TEACHER' && currentTeacherId) {
-        params.teacher_id = currentTeacherId;
+      if (user?.role === 'TEACHER' && user?.id) {
+        params.user_id = user.id;
+        params.role = user.role;
       }
 
       // If user is a student, only show subjects they're enrolled in
-      if (user?.role === 'STUDENT' && currentStudentId) {
-        params.student_id = currentStudentId;
+      if (user?.role === 'STUDENT' && user?.id) {
+        params.user_id = user.id;
+        params.role = user.role;
       }
 
       const response = await subjectService.getAll(params);

@@ -7,6 +7,8 @@ interface StatsCardProps {
   description?: string;
   icon: LucideIcon;
   iconColor?: string;
+  color?: string;
+  bgColor?: string;
 }
 
 export default function StatsCard({
@@ -15,11 +17,13 @@ export default function StatsCard({
   description,
   icon: Icon,
   iconColor = 'text-primary',
+  color,
+  bgColor,
 }: StatsCardProps) {
   return (
-    <Card>
+    <Card className={bgColor}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <CardTitle className={`text-sm font-medium ${color}`}>{title}</CardTitle>
         <Icon className={`h-4 w-4 ${iconColor}`} />
       </CardHeader>
       <CardContent>

@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'sonner';
 import { useAuthStore } from '@/store/authStore';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
@@ -52,6 +53,10 @@ import TestResultsPage from '@/pages/tests/TestResultsPage';
 import TestAttemptsListPage from '@/pages/tests/TestAttemptsListPage';
 import GradeTestPage from '@/pages/tests/GradeTestPage';
 import MyResultsPage from '@/pages/tests/MyResultsPage';
+
+// Chat imports
+import ChatsPageNew from '@/pages/chats/ChatsPageNew';
+import AdminChatsPage from '@/pages/chats/AdminChatsPage';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -146,6 +151,13 @@ function App() {
           <Route path="classes" element={<ClassesPage />} />
           <Route path="classes/new" element={<CreateClassPage />} />
           
+          {/* Chat Routes */}
+          <Route path="chats" element={<ChatsPageNew />} />
+          <Route path="chats/:chatId" element={<ChatsPageNew />} />
+          
+          {/* Admin Chat Routes */}
+          <Route path="admin/chats" element={<AdminChatsPage />} />
+          
           <Route path="profile" element={<div>Profile Page - Coming Soon</div>} />
           <Route path="settings" element={<div>Settings Page - Coming Soon</div>} />
         </Route>
@@ -210,6 +222,7 @@ function App() {
           </div>
         } />
       </Routes>
+      <Toaster />
     </Router>
   );
 }

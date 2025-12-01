@@ -54,14 +54,6 @@ export default function StudentModulesPage() {
     return moduleProgress.status;
   };
 
-  const getProgressColor = (status: string) => {
-    switch (status) {
-      case 'COMPLETED': return 'bg-green-500';
-      case 'IN_PROGRESS': return 'bg-blue-500';
-      default: return 'bg-gray-300';
-    }
-  };
-
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'COMPLETED': return <CheckCircle className="w-5 h-5 text-green-500" />;

@@ -3,7 +3,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useNotificationStore } from '@/store/notificationStore';
-import { X, Check, CheckCheck, Trash2, Info, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Check, CheckCheck, Trash2, Info, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Notification } from '@/types';
 
