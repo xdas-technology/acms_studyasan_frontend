@@ -43,6 +43,16 @@ import CreateBoardPage from '@/pages/boards/CreateBoardPage';
 import ClassesPage from '@/pages/classes/ClassesPage';
 import CreateClassPage from '@/pages/classes/CreateClassPage';
 
+// Test imports
+import TestsPage from '@/pages/tests/TestsPage';
+import CreateTestPage from '@/pages/tests/CreateTestPage';
+import TestDetailPage from '@/pages/tests/TestDetailPage';
+import TestAttemptPage from '@/pages/tests/TestAttemptPage';
+import TestResultsPage from '@/pages/tests/TestResultsPage';
+import TestAttemptsListPage from '@/pages/tests/TestAttemptsListPage';
+import GradeTestPage from '@/pages/tests/GradeTestPage';
+import MyResultsPage from '@/pages/tests/MyResultsPage';
+
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -138,6 +148,53 @@ function App() {
           
           <Route path="profile" element={<div>Profile Page - Coming Soon</div>} />
           <Route path="settings" element={<div>Settings Page - Coming Soon</div>} />
+        </Route>
+
+        {/* Test Routes (outside dashboard layout for fullscreen test attempt) */}
+        <Route
+          path="/tests"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<TestsPage />} />
+          <Route path="my-results" element={<MyResultsPage />} />
+          <Route path="create" element={<CreateTestPage />} />
+          <Route path=":testId" element={<TestDetailPage />} />
+          <Route path=":testId/edit" element={<CreateTestPage />} />
+          <Route path=":testId/attempts" element={<TestAttemptsListPage />} />
+        </Route>
+
+        {/* Test Attempt Routes - Fullscreen */}
+        <Route
+          path="/test-attempts/:attemptId"
+          element={
+            <ProtectedRoute>
+              <TestAttemptPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/test-attempts/:attemptId/results"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<TestResultsPage />} />
+        </Route>
+        <Route
+          path="/test-attempts/:attemptId/grade"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<GradeTestPage />} />
         </Route>
 
         {/* Redirect root to dashboard */}

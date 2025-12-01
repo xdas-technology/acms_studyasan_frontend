@@ -486,3 +486,153 @@ export interface UpdateProgressData {
   status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
   time_spent_minutes?: number;
 }
+
+// Test module types
+export type QuestionType = 'MCQ' | 'TRUE_FALSE' | 'SHORT_ANSWER';
+
+export interface Question {
+  id: number;
+  test_id: number;
+  question_type: QuestionType;
+  question_text: string;
+  options: string[] | null;
+  correct_answer: string | null;
+  marks: number;
+  order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Test {
+  id: number;
+  title: string;
+  description: string | null;
+  subject_id: number;
+  created_by: number;
+  total_marks: number;
+  passing_marks: number;
+  duration_minutes: number;
+  available_from: string;
+  available_until: string;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+  subject?: {
+    id: number;
+    name: string;
+    cover_image: string | null;
+  };
+  creator?: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  questions?: Question[];
+  _count?: {
+    questions: number;
+    test_attempts: number;
+  };
+}
+
+export interface Answer {
+  id: number;
+  test_attempt_id: number;
+  question_id: number;
+  answer_text: string | null;
+  marks_obtained: number | null;
+  is_correct: boolean | null;
+  created_at: string;
+  updated_at: string;
+  question?: Question;
+}
+
+export interface TestAttempt {
+  id: number;
+  test_id: number;
+  student_id: number;
+  started_at: string;
+  submitted_at: string | null;
+  score: number | null;
+  total_marks: number;
+  is_passed: boolean | null;
+  is_graded: boolean;
+  graded_by: number | null;
+  graded_at: string | null;
+  created_at: string;
+  updated_at: string;
+  test?: Test;
+  student?: {
+    id: number;
+    user: {
+      id: number;
+      name: string;
+      email: string;
+    };
+  };
+  grader?: {
+    id: number;
+    name: string;
+    email: string;
+  } | null;
+  answers?: Answer[];
+}
+
+export interface CreateTestData {
+  title: string;
+  description?: string;
+  subject_id: number;
+  total_marks: number;
+  passing_marks: number;
+  duration_minutes: number;
+  available_from: string;
+  available_until: string;
+  is_published?: boolean;
+}
+
+export interface UpdateTestData {
+  title?: string;
+  description?: string;
+  total_marks?: number;
+  passing_marks?: number;
+  duration_minutes?: number;
+  available_from?: string;
+  available_until?: string;
+  is_published?: boolean;
+}
+
+export interface GenerateQuestionsData {
+  topic: string;
+  numMCQ?: number;
+  numTrueFalse?: number;
+  numShortAnswer?: number;
+}
+
+export interface CreateQuestionData {
+  question_type: QuestionType;
+  question_text: string;
+  options?: string[];
+  correct_answer: string;
+  marks: number;
+}
+
+export interface UpdateQuestionData {
+  question_text?: string;
+  options?: string[];
+  correct_answer?: string;
+  marks?: number;
+}
+
+export interface SubmitAnswerData {
+  question_id: number;
+  answer_text: string;
+}
+
+export interface GradeAnswerData {
+  answer_id: number;
+  marks_obtained: number;
+  is_correct: boolean;
+}
+
+export interface GradeTestData {
+  grades: GradeAnswerData[];
+}

@@ -10,6 +10,8 @@ import {
   Settings,
   LayoutDashboard,
   ClipboardList,
+  FileText,
+  Award,
 } from 'lucide-react';
 
 interface NavItem {
@@ -43,6 +45,18 @@ const navItems: NavItem[] = [
     href: '/dashboard/subjects',
     icon: BookOpen,
     roles: ['ADMIN', 'TEACHER', 'STUDENT'],
+  },
+  {
+    title: 'Tests',
+    href: '/tests',
+    icon: FileText,
+    roles: ['ADMIN', 'TEACHER', 'STUDENT'],
+  },
+  {
+    title: 'My Results',
+    href: '/tests/my-results',
+    icon: Award,
+    roles: ['STUDENT'],
   },
   {
     title: 'Classes',

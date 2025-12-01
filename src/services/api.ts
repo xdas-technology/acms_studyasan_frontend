@@ -33,6 +33,17 @@ import type {
   AddTextContentData,
   UpdateContentData,
   UpdateProgressData,
+  Test,
+  TestAttempt,
+  CreateTestData,
+  UpdateTestData,
+  GenerateQuestionsData,
+  CreateQuestionData,
+  UpdateQuestionData,
+  SubmitAnswerData,
+  GradeTestData,
+  Question,
+  Answer,
 } from '@/types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
@@ -502,6 +513,106 @@ export const progressService = {
   // Get progress statistics for a subject
   getProgressStats: async (subjectId: number): Promise<{ success: boolean; data: { totalStudents: number; completedModules: { [moduleId: number]: number }; averageProgress: number } }> => {
     const response = await api.get(`/progress/subjects/${subjectId}/stats`);
+    return response.data;
+  },
+};
+
+export const testService = {
+  // Get all tests
+  getAll: async (params?: { subject_id?: number; is_published?: boolean }): Promise<{ success: boolean; data: Test[] }> => {
+    const response = await api.get('/tests', { params });
+    return response.data;
+  },
+
+  // Get test by ID
+  getById: async (testId: number): Promise<{ success: boolean; data: Test }> => {
+    const response = await api.get(`/tests/${testId}`);
+    return response.data;
+  },
+
+  // Create test
+  create: async (data: CreateTestData): Promise<{ success: boolean; data: Test }> => {
+    const response = await api.post('/tests', data);
+    return response.data;
+  },
+
+  // Update test
+  update: async (testId: number, data: UpdateTestData): Promise<{ success: boolean; data: Test }> => {
+    const response = await api.put(`/tests/${testId}`, data);
+    return response.data;
+  },
+
+  // Delete test
+  delete: async (testId: number): Promise<{ success: boolean; message: string }> => {
+    const response = await api.delete(`/tests/${testId}`);
+    return response.data;
+  },
+
+  // Generate questions using AI
+  generateQuestions: async (testId: number, data: GenerateQuestionsData): Promise<{ success: boolean; data: Question[] }> => {
+    const response = await api.post(`/tests/${testId}/generate-questions`, data);
+    return response.data;
+  },
+
+  // Add manual question
+  addQuestion: async (testId: number, data: CreateQuestionData): Promise<{ success: boolean; data: Question }> => {
+    const response = await api.post(`/tests/${testId}/questions`, data);
+    return response.data;
+  },
+
+  // Update question
+  updateQuestion: async (questionId: number, data: UpdateQuestionData): Promise<{ success: boolean; data: Question }> => {
+    const response = await api.put(`/questions/${questionId}`, data);
+    return response.data;
+  },
+
+  // Delete question
+  deleteQuestion: async (questionId: number): Promise<{ success: boolean; message: string }> => {
+    const response = await api.delete(`/questions/${questionId}`);
+    return response.data;
+  },
+};
+
+export const testAttemptService = {
+  // Start test attempt
+  startAttempt: async (testId: number): Promise<{ success: boolean; data: TestAttempt }> => {
+    const response = await api.post(`/tests/${testId}/start`);
+    return response.data;
+  },
+
+  // Submit answer
+  submitAnswer: async (attemptId: number, data: SubmitAnswerData): Promise<{ success: boolean; data: Answer }> => {
+    const response = await api.post(`/test-attempts/${attemptId}/answers`, data);
+    return response.data;
+  },
+
+  // Submit test
+  submitTest: async (attemptId: number): Promise<{ success: boolean; data: TestAttempt }> => {
+    const response = await api.post(`/test-attempts/${attemptId}/submit`);
+    return response.data;
+  },
+
+  // Get test attempt
+  getAttempt: async (attemptId: number): Promise<{ success: boolean; data: TestAttempt }> => {
+    const response = await api.get(`/test-attempts/${attemptId}`);
+    return response.data;
+  },
+
+  // Get all attempts for a test
+  getTestAttempts: async (testId: number): Promise<{ success: boolean; data: TestAttempt[] }> => {
+    const response = await api.get(`/tests/${testId}/attempts`);
+    return response.data;
+  },
+
+  // Get my test attempts
+  getMyAttempts: async (params?: { subject_id?: number }): Promise<{ success: boolean; data: TestAttempt[] }> => {
+    const response = await api.get('/my-test-attempts', { params });
+    return response.data;
+  },
+
+  // Grade test attempt
+  gradeAttempt: async (attemptId: number, data: GradeTestData): Promise<{ success: boolean; data: TestAttempt }> => {
+    const response = await api.post(`/test-attempts/${attemptId}/grade`, data);
     return response.data;
   },
 };
