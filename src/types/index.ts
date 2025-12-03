@@ -1,0 +1,707 @@
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  role: 'ADMIN' | 'TEACHER' | 'STUDENT';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AuthResponse {
+  success: boolean;
+  message: string;
+  data: {
+    user: User;
+    token: string;
+  };
+}
+
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+export interface RegisterData {
+  name: string;
+  email: string;
+  phone: string;
+  password: string;
+  role?: string;
+}
+
+export interface Notification {
+  id: number;
+  user_id: number;
+  type: 'INFO' | 'WARNING' | 'SUCCESS';
+  title: string;
+  description: string | null;
+  is_read: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PaginatedResponse<T> {
+  success: boolean;
+  message: string;
+  data: {
+    data: T[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  };
+}
+
+export interface ApiError {
+  success: false;
+  message: string;
+  errors?: any;
+}
+
+
+export interface Student {
+  id: number;
+  user_id: number;
+  class_id: number | null;
+  board_id: number | null;
+  date_of_birth: string | null;
+  gender: 'M' | 'F' | 'OTHER' | null;
+  school: string | null;
+  created_at: string;
+  updated_at: string;
+  user: {
+    id: number;
+    name: string;
+    email: string;
+    phone: string;
+  };
+  class: {
+    id: number;
+    name: string;
+  } | null;
+  board: {
+    id: number;
+    name: string;
+  } | null;
+  _count?: {
+    enrollments: number;
+  };
+}
+
+export interface Board {
+  id: number;
+  name: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Class {
+  id: number;
+  name: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateBoardData {
+  name: string;
+}
+
+export interface UpdateBoardData {
+  name: string;
+}
+
+export interface CreateClassData {
+  name: string;
+}
+
+export interface UpdateClassData {
+  name: string;
+}
+
+export interface CreateStudentData {
+  name: string;
+  email: string;
+  phone: string;
+  password: string;
+  class_id: number | null;
+  board_id: number | null;
+  date_of_birth: string | null;
+  gender: 'M' | 'F' | 'OTHER' | null;
+  school: string | null;
+}
+
+export interface UpdateStudentData {
+  class_id?: number | null;
+  board_id?: number | null;
+  date_of_birth?: string | null;
+  gender?: 'M' | 'F' | 'OTHER' | null;
+  school?: string | null;
+}
+
+export interface Teacher {
+  id: number;
+  user_id: number;
+  salary: number | null;
+  qualification: string | null;
+  gender: 'M' | 'F' | 'OTHER' | null;
+  experience: string | null;
+  created_at: string;
+  updated_at: string;
+  user: {
+    id: number;
+    name: string;
+    email: string;
+    phone: string;
+  };
+  _count?: {
+    teacher_subject_junctions: number;
+  };
+  teacher_subject_junctions?: {
+    id: number;
+    subject_id: number;
+    subject: {
+      id: number;
+      name: string;
+      class: {
+        id: number;
+        name: string;
+      } | null;
+    };
+  }[];
+}
+
+export interface Subject {
+  id: number;
+  name: string;
+  cover_image: string | null;
+  class_id: number | null;
+  board_id: number | null;
+  syllabus: any;
+  is_course: boolean;
+  created_at: string;
+  updated_at: string;
+  class: {
+    id: number;
+    name: string;
+  } | null;
+  board: {
+    id: number;
+    name: string;
+  } | null;
+  _count?: {
+    enrollments: number;
+    teacher_subject_junctions: number;
+  };
+  enrollments?: {
+    id: number;
+    student: {
+      id: number;
+      user: {
+        id: number;
+        name: string;
+        email: string;
+      };
+    };
+  }[];
+  teacher_subject_junctions?: {
+    id: number;
+    teacher: {
+      id: number;
+      user: {
+        id: number;
+        name: string;
+        email: string;
+      };
+    };
+  }[];
+}
+
+export interface CreateSubjectData {
+  name: string;
+  cover_image: string | null;
+  class_id: number | null;
+  board_id: number | null;
+  syllabus: any;
+  is_course: boolean;
+}
+
+export interface UpdateSubjectData {
+  name?: string;
+  cover_image?: string | null;
+  class_id?: number | null;
+  board_id?: number | null;
+  syllabus?: any;
+  is_course?: boolean;
+}
+
+export interface CreateTeacherData {
+  name: string;
+  email: string;
+  phone: string;
+  password: string;
+  salary: number | null;
+  qualification: string | null;
+  gender: 'M' | 'F' | 'OTHER' | null;
+  experience: string | null;
+}
+
+export interface UpdateTeacherData {
+  salary?: number | null;
+  qualification?: string | null;
+  gender?: 'M' | 'F' | 'OTHER' | null;
+  experience?: string | null;
+}
+
+export interface TeacherSubjectAssignment {
+  teacher_id: number;
+  subject_id: number;
+}
+
+export interface Enrollment {
+  id: number;
+  student_id: number;
+  subject_id: number;
+  created_on: string;
+  updated_on: string;
+  student: {
+    id: number;
+    user: {
+      id: number;
+      name: string;
+      email: string;
+      phone: string;
+    };
+    class: {
+      id: number;
+      name: string;
+    } | null;
+    board: {
+      id: number;
+      name: string;
+    } | null;
+  };
+  subject: {
+    id: number;
+    name: string;
+    is_course: boolean;
+    class: {
+      id: number;
+      name: string;
+    } | null;
+    board: {
+      id: number;
+      name: string;
+    } | null;
+  };
+}
+
+export interface CreateEnrollmentData {
+  student_id: number;
+  subject_id: number;
+}
+
+export interface BulkEnrollmentData {
+  student_ids: number[];
+  subject_id: number;
+}
+
+export interface ClassSession {
+  id: number;
+  teacher_id: number;
+  subject_id: number;
+  class_id: number | null;
+  board_id: number | null;
+  mode: 'ONLINE' | 'OFFLINE';
+  location: string | null;
+  meeting_link: string | null;
+  start_time: string;
+  end_time: string;
+  is_recurring: boolean;
+  recurrence_rule: any;
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+  teacher?: {
+    id: number;
+    user: {
+      id: number;
+      name: string;
+      email: string;
+    };
+  };
+  subject?: {
+    id: number;
+    name: string;
+  };
+  class?: {
+    id: number;
+    name: string;
+  } | null;
+  board?: {
+    id: number;
+    name: string;
+  } | null;
+  creator?: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  _count?: {
+    attendances: number;
+  };
+  attendances?: ClassSessionAttendance[];
+}
+
+export interface ClassSessionAttendance {
+  id: number;
+  class_session_id: number;
+  user_id: number;
+  role: 'TEACHER' | 'STUDENT';
+  joined_at: string | null;
+  left_at: string | null;
+  duration_minutes: number | null;
+  created_at: string;
+  updated_at: string;
+  user?: {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+  };
+  class_session?: ClassSession;
+}
+
+export interface CreateClassSessionData {
+  teacher_id: number;
+  subject_id: number;
+  class_id?: number | null;
+  board_id?: number | null;
+  mode: 'ONLINE' | 'OFFLINE';
+  location?: string | null;
+  meeting_link?: string | null;
+  start_time: string;
+  end_time: string;
+  is_recurring?: boolean;
+  recurrence_rule?: any;
+}
+
+export interface UpdateClassSessionData {
+  teacher_id?: number;
+  subject_id?: number;
+  class_id?: number | null;
+  board_id?: number | null;
+  mode?: 'ONLINE' | 'OFFLINE';
+  location?: string | null;
+  meeting_link?: string | null;
+  start_time?: string;
+  end_time?: string;
+  is_recurring?: boolean;
+  recurrence_rule?: any;
+}
+
+export interface RecordAttendanceData {
+  class_session_id: number;
+  user_id: number;
+  role: 'TEACHER' | 'STUDENT';
+  joined_at?: string;
+  left_at?: string;
+}
+
+export interface UpdateAttendanceData {
+  joined_at?: string;
+  left_at?: string;
+}
+
+// Module-related types
+export interface ModuleContent {
+  content_id: number;
+  type: 'text' | 'image' | 'video' | 'pdf' | 'document';
+  text_content?: string;
+  file_name?: string;
+  file_size?: number;
+  s3_key?: string;
+  s3_url?: string;
+  uploaded_at?: string;
+}
+
+export interface Module {
+  module_id: number;
+  title: string;
+  description: string;
+  order: number;
+  content: ModuleContent[];
+  estimated_time_minutes: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface StudentModuleProgress {
+  id: number;
+  student_id: number;
+  subject_id: number;
+  module_id: number;
+  status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
+  started_at: string | null;
+  completed_at: string | null;
+  time_spent_minutes: number;
+  created_at: string;
+  updated_at: string;
+  student?: {
+    id: number;
+    user: {
+      id: number;
+      name: string;
+      email: string;
+    };
+  };
+  module?: Module;
+}
+
+export interface CreateModuleData {
+  title: string;
+  description: string;
+  estimated_time_minutes?: number;
+}
+
+export interface UpdateModuleData {
+  title?: string;
+  description?: string;
+  estimated_time_minutes?: number;
+  order?: number;
+}
+
+export interface AddTextContentData {
+  text_content: string;
+}
+
+export interface UpdateContentData {
+  type?: 'text' | 'image' | 'video' | 'pdf' | 'document';
+  text_content?: string;
+}
+
+export interface UpdateProgressData {
+  status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
+  time_spent_minutes?: number;
+}
+
+// Test module types
+export type QuestionType = 'MCQ' | 'TRUE_FALSE' | 'SHORT_ANSWER';
+
+export interface Question {
+  id: number;
+  test_id: number;
+  question_type: QuestionType;
+  question_text: string;
+  options: string[] | null;
+  correct_answer: string | null;
+  marks: number;
+  order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Test {
+  id: number;
+  title: string;
+  description: string | null;
+  subject_id: number;
+  created_by: number;
+  total_marks: number;
+  passing_marks: number;
+  duration_minutes: number;
+  available_from: string;
+  available_until: string;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+  subject?: {
+    id: number;
+    name: string;
+    cover_image: string | null;
+  };
+  creator?: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  questions?: Question[];
+  _count?: {
+    questions: number;
+    test_attempts: number;
+  };
+}
+
+export interface Answer {
+  id: number;
+  test_attempt_id: number;
+  question_id: number;
+  answer_text: string | null;
+  marks_obtained: number | null;
+  is_correct: boolean | null;
+  created_at: string;
+  updated_at: string;
+  question?: Question;
+}
+
+export interface TestAttempt {
+  id: number;
+  test_id: number;
+  student_id: number;
+  started_at: string;
+  submitted_at: string | null;
+  score: number | null;
+  total_marks: number;
+  is_passed: boolean | null;
+  is_graded: boolean;
+  graded_by: number | null;
+  graded_at: string | null;
+  created_at: string;
+  updated_at: string;
+  test?: Test;
+  student?: {
+    id: number;
+    user: {
+      id: number;
+      name: string;
+      email: string;
+    };
+  };
+  grader?: {
+    id: number;
+    name: string;
+    email: string;
+  } | null;
+  answers?: Answer[];
+}
+
+export interface CreateTestData {
+  title: string;
+  description?: string;
+  subject_id: number;
+  total_marks: number;
+  passing_marks: number;
+  duration_minutes: number;
+  available_from: string;
+  available_until: string;
+  is_published?: boolean;
+}
+
+export interface UpdateTestData {
+  title?: string;
+  description?: string;
+  total_marks?: number;
+  passing_marks?: number;
+  duration_minutes?: number;
+  available_from?: string;
+  available_until?: string;
+  is_published?: boolean;
+}
+
+export interface GenerateQuestionsData {
+  topic: string;
+  numMCQ?: number;
+  numTrueFalse?: number;
+  numShortAnswer?: number;
+}
+
+export interface CreateQuestionData {
+  question_type: QuestionType;
+  question_text: string;
+  options?: string[];
+  correct_answer: string;
+  marks: number;
+}
+
+export interface UpdateQuestionData {
+  question_text?: string;
+  options?: string[];
+  correct_answer?: string;
+  marks?: number;
+}
+
+export interface SubmitAnswerData {
+  question_id: number;
+  answer_text: string;
+}
+
+export interface GradeAnswerData {
+  answer_id: number;
+  marks_obtained: number;
+  is_correct: boolean;
+}
+
+export interface GradeTestData {
+  grades: GradeAnswerData[];
+}
+
+// Chat Types
+export interface ChatParticipant {
+  id: number;
+  chat_id: number;
+  user_id: number;
+  joined_at: string;
+  user: {
+    id: number;
+    name: string;
+    email: string;
+    phone: string;
+    role: 'ADMIN' | 'TEACHER' | 'STUDENT';
+    created_at: string;
+    updated_at: string;
+  };
+}
+
+export interface Message {
+  id: number;
+  chat_id: number;
+  sender_id: number;
+  content: string | null;
+  message_type: MessageType;
+  attachment_url: string | null;
+  created_at: string;
+  updated_at: string;
+  sender: {
+    id: number;
+    name: string;
+    email: string;
+  };
+}
+
+export type MessageType = 'TEXT' | 'IMAGE' | 'VIDEO' | 'PDF' | 'FILE';
+
+export interface Chat {
+  id: number;
+  created_at: string;
+  updated_at: string;
+  participants: ChatParticipant[];
+  messages: Message[];
+  _count: {
+    messages: number;
+  };
+}
+
+export interface StartChatData {
+  participantIds: number[];
+}
+
+export interface SendMessageData {
+  content?: string;
+  messageType?: MessageType;
+}
+
+export interface ChatMessagesResponse {
+  success: boolean;
+  message: string;
+  data: {
+    messages: Message[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      pages: number;
+    };
+  };
+}
