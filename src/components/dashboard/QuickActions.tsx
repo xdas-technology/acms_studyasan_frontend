@@ -1,7 +1,7 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { useAuthStore } from '@/store/authStore';
-import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useAuthStore } from "@/store/authStore";
+import { useNavigate } from "react-router-dom";
 import {
   UserPlus,
   BookOpen,
@@ -10,11 +10,11 @@ import {
   FileText,
   Settings,
   UserCheck,
-} from 'lucide-react';
+  ArrowUpRight,
+} from "lucide-react";
 
 interface QuickAction {
   title: string;
-  description: string;
   icon: React.ElementType;
   action: () => void;
   roles: string[];
@@ -26,89 +26,83 @@ export default function QuickActions() {
 
   const quickActions: QuickAction[] = [
     {
-      title: 'Add Student',
-      description: 'Register a new student',
+      title: "Add Student",
       icon: UserPlus,
-      action: () => navigate('/dashboard/students/new'),
-      roles: ['ADMIN'],
+      action: () => navigate("/dashboard/students/new"),
+      roles: ["ADMIN"],
     },
     {
-      title: 'Add Teacher',
-      description: 'Register a new teacher',
+      title: "Add Teacher",
       icon: UserCheck,
-      action: () => navigate('/dashboard/teachers/new'),
-      roles: ['ADMIN'],
+      action: () => navigate("/dashboard/teachers/new"),
+      roles: ["ADMIN"],
     },
     {
-      title: 'Add Subject',
-      description: 'Create a new subject',
+      title: "Add Subject",
       icon: BookOpen,
-      action: () => navigate('/dashboard/subjects/new'),
-      roles: ['ADMIN'],
+      action: () => navigate("/dashboard/subjects/new"),
+      roles: ["ADMIN"],
     },
     {
-      title: 'View Students',
-      description: 'Manage all students',
+      title: "View Students",
       icon: Users,
-      action: () => navigate('/dashboard/students'),
-      roles: ['ADMIN', 'TEACHER'],
+      action: () => navigate("/dashboard/students"),
+      roles: ["ADMIN", "TEACHER"],
     },
     {
-      title: 'View Teachers',
-      description: 'Manage all teachers',
+      title: "View Teachers",
       icon: UserCheck,
-      action: () => navigate('/dashboard/teachers'),
-      roles: ['ADMIN'],
+      action: () => navigate("/dashboard/teachers"),
+      roles: ["ADMIN"],
     },
     {
-      title: 'Enrollments',
-      description: 'Manage enrollments',
+      title: "Enrollments",
       icon: GraduationCap,
-      action: () => navigate('/dashboard/enrollments'),
-      roles: ['ADMIN', 'TEACHER', 'STUDENT'],
+      action: () => navigate("/dashboard/enrollments"),
+      roles: ["ADMIN", "TEACHER", "STUDENT"],
     },
     {
-      title: 'My Subjects',
-      description: 'View enrolled subjects',
+      title: "My Subjects",
       icon: FileText,
-      action: () => navigate('/dashboard/subjects'),
-      roles: ['STUDENT'],
+      action: () => navigate("/dashboard/subjects"),
+      roles: ["STUDENT"],
     },
     {
-      title: 'Settings',
-      description: 'Manage preferences',
+      title: "Settings",
       icon: Settings,
-      action: () => navigate('/dashboard/settings'),
-      roles: ['ADMIN', 'TEACHER', 'STUDENT'],
+      action: () => navigate("/dashboard/settings"),
+      roles: ["ADMIN", "TEACHER", "STUDENT"],
     },
   ];
 
   const filteredActions = quickActions.filter((action) =>
-    action.roles.includes(user?.role || '')
+    action.roles.includes(user?.role || "")
   );
 
   return (
-    <Card>
+    <Card className="shadow-md">
       <CardHeader>
-        <CardTitle>Quick Actions</CardTitle>
-        <CardDescription>Frequently used actions for quick access</CardDescription>
+        <CardTitle className="text-xl text-gray-600">Quick Actions</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 overflow-visible">
           {filteredActions.map((action) => (
             <Button
               key={action.title}
-              variant="outline"
-              className="h-auto flex flex-col items-start p-4 space-y-2"
               onClick={action.action}
+              className="flex items-center justify-between w-full px-4 py-3 relative z-10 bg-saBlue hover:bg-saBlueDarkHover text-white border-none shadow-lg transition-shadow duration-200"
             >
-              <div className="flex items-center space-x-2 w-full">
-                <action.icon className="h-5 w-5 text-primary" />
+              {/* Left part: Icon + Title */}
+              <div className="flex items-center space-x-2">
+                <action.icon className="w-5 h-5" />
                 <span className="font-semibold">{action.title}</span>
               </div>
-              <span className="text-xs text-muted-foreground text-left">
-                {action.description}
-              </span>
+
+              {/* Divider positioned relative to arrow */}
+              <div className="absolute h-6 w-px right-12 bg-saBlueLight" />
+
+              {/* Right part: Arrow up-right */}
+              <ArrowUpRight className="w-5 h-5 ml-6 text-saVividOrange" />
             </Button>
           ))}
         </div>
