@@ -1,18 +1,56 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { MessageSquare, Users, Calendar, ArrowRight } from 'lucide-react';
-import { chatService } from '@/services/api';
-import type { Chat, User } from '@/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { MessageSquare, Users, Calendar, ArrowRight } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { chatService } from "@/services/api";
+import type { Chat, User } from "@/types";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
+/* ---------------------------
+   Custom StatsCard (Lite)
+---------------------------- */
+interface StatsCardLiteProps {
+  title: string;
+  value: string | number;
+  icon: LucideIcon;
+  color?: string;
+  bgColor?: string;
+  accentColor?: string;
+}
+
+function StatsCardLite({
+  title,
+  value,
+  icon: Icon,
+  color = "text-[#0276D3]",
+  bgColor = "bg-white",
+  accentColor = "border-[#0276D3]",
+}: StatsCardLiteProps) {
+  return (
+    <div
+      className={`flex flex-col p-6 rounded-2xl shadow-md border-l-4 ${accentColor} ${bgColor}`}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <h4 className="text-gray-600 text-sm">{title}</h4>
+        <div className="p-2 rounded-full bg-gray-100">
+          <Icon className={`h-5 w-5 ${color}`} />
+        </div>
+      </div>
+      <p className={`text-2xl font-bold ${color}`}>{value}</p>
+    </div>
+  );
+}
+
+/* ---------------------------
+   Admin Chats Page
+---------------------------- */
 export default function AdminChatsPage() {
   const [chats, setChats] = useState<Chat[]>([]);
   const [filteredChats, setFilteredChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -20,20 +58,19 @@ export default function AdminChatsPage() {
   }, []);
 
   useEffect(() => {
-    if (searchQuery.trim() === '') {
+    if (searchQuery.trim() === "") {
       setFilteredChats(chats);
     } else {
       const query = searchQuery.toLowerCase();
-      const filtered = chats.filter(chat => {
-        // Search in participant names and emails
-        const participantMatch = chat.participants.some(p =>
-          p.user.name.toLowerCase().includes(query) ||
-          p.user.email.toLowerCase().includes(query)
+      const filtered = chats.filter((chat) => {
+        const participantMatch = chat.participants.some(
+          (p) =>
+            p.user.name.toLowerCase().includes(query) ||
+            p.user.email.toLowerCase().includes(query)
         );
-        
-        // Search in latest message
-        const messageMatch = chat.messages?.[0]?.content?.toLowerCase().includes(query);
-        
+        const messageMatch = chat.messages?.[0]?.content
+          ?.toLowerCase()
+          .includes(query);
         return participantMatch || messageMatch;
       });
       setFilteredChats(filtered);
@@ -47,185 +84,139 @@ export default function AdminChatsPage() {
       setChats(response.data);
       setFilteredChats(response.data);
     } catch (error) {
-      console.error('Error fetching chats:', error);
+      console.error("Error fetching chats:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const getParticipantRoles = (chat: Chat): { students: User[]; teachers: User[] } => {
+  const getParticipantRoles = (
+    chat: Chat
+  ): { students: User[]; teachers: User[] } => {
     const students = chat.participants
-      .filter(p => p.user.role === 'STUDENT')
-      .map(p => p.user);
-    
+      .filter((p) => p.user.role === "STUDENT")
+      .map((p) => p.user);
     const teachers = chat.participants
-      .filter(p => p.user.role === 'TEACHER')
-      .map(p => p.user);
-    
+      .filter((p) => p.user.role === "TEACHER")
+      .map((p) => p.user);
     return { students, teachers };
   };
 
-  const formatDate = (date: string | Date): string => {
+  // "Time ago" helper function
+  const formatTimeAgo = (date: string | Date) => {
     const d = new Date(date);
     const now = new Date();
-    const diff = now.getTime() - d.getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const diffMs = now.getTime() - d.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-    if (days === 0) {
-      return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-    } else if (days === 1) {
-      return 'Yesterday';
-    } else if (days < 7) {
-      return `${days} days ago`;
-    } else {
-      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    }
+    if (diffDays === 0) return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+    if (diffDays === 1) return "Yesterday";
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} week${Math.floor(diffDays / 7) > 1 ? 's' : ''} ago`;
+    if (diffDays < 365) return `${Math.floor(diffDays / 30)} month${Math.floor(diffDays / 30) > 1 ? 's' : ''} ago`;
+    return `${Math.floor(diffDays / 365)} year${Math.floor(diffDays / 365) > 1 ? 's' : ''} ago`;
   };
 
+  const activeTodayCount = chats.filter((chat) => {
+    const lastMessage = chat.messages?.[0];
+    if (!lastMessage) return false;
+    const messageDate = new Date(lastMessage.created_at);
+    return messageDate.toDateString() === new Date().toDateString();
+  }).length;
+
+  const totalMessages = chats.reduce(
+    (sum, chat) => sum + (chat._count?.messages || 0),
+    0
+  );
+
   return (
-    <div className="p-6">
+    <div>
+      {/* Page Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold">All Chats</h1>
-          <p className="text-gray-600 mt-1">Monitor all conversations between students and teachers</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-600">All Chats</h1>
+          <p className="text-gray-400 mt-1 text-sm sm:text-base">
+            Monitor all conversations between students and teachers
+          </p>
         </div>
       </div>
 
       {/* Search */}
       <Card className="mb-6">
         <CardContent className="pt-6">
-          <div className="flex items-center gap-4">
-            <Input
-              placeholder="Search chats by participant name, email, or message content..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1"
-            />
-          </div>
+          <Input
+            placeholder="Search chats by participant name, email, or message content..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="flex-1"
+          />
         </CardContent>
       </Card>
 
-      {/* Stats */}
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Chats</CardTitle>
-            <MessageSquare className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{chats.length}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Today</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {chats.filter(chat => {
-                const lastMessage = chat.messages?.[0];
-                if (!lastMessage) return false;
-                const messageDate = new Date(lastMessage.created_at);
-                const today = new Date();
-                return messageDate.toDateString() === today.toDateString();
-              }).length}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Messages</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {chats.reduce((sum, chat) => sum + (chat._count?.messages || 0), 0)}
-            </div>
-          </CardContent>
-        </Card>
+        <StatsCardLite title="Total Chats" value={chats.length} icon={MessageSquare} />
+        <StatsCardLite title="Active Today" value={activeTodayCount} icon={Calendar} />
+        <StatsCardLite title="Total Messages" value={totalMessages} icon={Users} />
       </div>
 
       {/* Chats List */}
       {loading ? (
-        <div className="text-center py-12">Loading chats...</div>
+        <div className="text-center py-12 text-gray-500">Loading chats...</div>
       ) : filteredChats.length === 0 ? (
-        <Card>
-          <CardContent className="text-center py-12">
+        <Card className="text-center py-12">
+          <CardContent>
             <MessageSquare className="w-12 h-12 mx-auto text-gray-400 mb-4" />
             <p className="text-gray-600">
-              {searchQuery ? 'No chats found matching your search' : 'No chats found'}
+              {searchQuery ? "No chats found matching your search" : "No chats found"}
             </p>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredChats.map((chat) => {
             const { students, teachers } = getParticipantRoles(chat);
             const lastMessage = chat.messages?.[0];
+            const timeAgo = lastMessage ? formatTimeAgo(lastMessage.created_at) : "";
 
             return (
               <Card
                 key={chat.id}
-                className="hover:shadow-lg transition-shadow cursor-pointer"
+                className="hover:shadow-xl transition-shadow cursor-pointer rounded-2xl flex flex-col overflow-hidden"
                 onClick={() => navigate(`/dashboard/chats?chatId=${chat.id}`)}
               >
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-semibold text-lg">
-                          Chat #{chat.id}
-                        </h3>
-                        <Badge variant="outline">
-                          {chat._count?.messages || 0} messages
-                        </Badge>
-                      </div>
 
-                      {/* Participants */}
-                      <div className="space-y-2 mb-3">
-                        {students.length > 0 && (
-                          <div className="flex items-center gap-2">
-                            <Badge className="bg-blue-500">Students</Badge>
-                            <span className="text-sm text-gray-600">
-                              {students.map(s => s.name).join(', ')}
-                            </span>
-                          </div>
-                        )}
-                        {teachers.length > 0 && (
-                          <div className="flex items-center gap-2">
-                            <Badge className="bg-green-500">Teachers</Badge>
-                            <span className="text-sm text-gray-600">
-                              {teachers.map(t => t.name).join(', ')}
-                            </span>
-                          </div>
-                        )}
-                      </div>
+{/* Header */}
+<div className="bg-saBlueLight/60 p-4 sm:p-5 flex justify-between items-center text-gray-700 font-semibold">
+  <span>Chat #{chat.id}</span>
+  <span>{timeAgo}</span>
+</div>
 
-                      {/* Last Message */}
-                      {lastMessage && (
-                        <div className="bg-gray-50 p-3 rounded-md">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-sm font-medium text-gray-700">
-                              {lastMessage.sender.name}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              {formatDate(lastMessage.created_at)}
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-600 line-clamp-2">
-                            {lastMessage.content || <em className="text-gray-400">[{lastMessage.message_type}]</em>}
-                          </p>
-                        </div>
-                      )}
-                    </div>
 
+                {/* Body */}
+                <CardContent className="flex flex-col p-4 sm:p-5 gap-3 bg-gray-100 flex-1">
+                  {/* Participants */}
+                  <div className="text-gray-700 text-sm">
+                    {students.length > 0 && <>Student: {students.map(s => s.name).join(", ")}<br /></>}
+                    {teachers.length > 0 && <>Teacher: {teachers.map(t => t.name).join(", ")}</>}
+                  </div>
+
+                  {/* Last Message Preview */}
+                  {lastMessage && (
+                    <p className="text-gray-600 text-sm line-clamp-2 flex-1 mt-2">
+                      <span className="block mb-1">Last Message : </span>
+                      <span className="font-medium text-gray-700">{lastMessage.sender.name}:</span>{" "}
+                      {lastMessage.content || `[${lastMessage.message_type}]`}
+                    </p>
+                  )}
+
+                  {/* Footer: Messages Count + Arrow */}
+                  <div className="flex items-center justify-between mt-2 text-gray-700 text-sm">
+                    <span>{chat._count?.messages || 0} messages</span>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="ml-4"
+                      className="text-saBlue hover:text-saBlueDarkHover"
                       onClick={(e) => {
                         e.stopPropagation();
                         navigate(`/dashboard/chats?chatId=${chat.id}`);
