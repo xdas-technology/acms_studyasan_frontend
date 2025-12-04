@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -16,25 +16,46 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { subjectService, boardService, classService, teacherService, studentService } from '@/services/api';
-import type { Subject, Board, Class } from '@/types';
-import { Plus, Search, Eye, Edit, Trash2, Loader2, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
-import DeleteSubjectDialog from '@/components/subjects/DeleteSubjectDialog';
-import { useAuthStore } from '@/store/authStore';
+} from "@/components/ui/table";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
+import {
+  subjectService,
+  boardService,
+  classService,
+} from "@/services/api";
+
+import type { Subject, Board, Class } from "@/types";
+
+import {
+  Plus,
+  Eye,
+  Edit,
+  Trash2,
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+  BookOpen,
+} from "lucide-react";
+
+import DeleteSubjectDialog from "@/components/subjects/DeleteSubjectDialog";
+import { useAuthStore } from "@/store/authStore";
 
 export default function SubjectsPage() {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
+
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [boards, setBoards] = useState<Board[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deleteSubject, setDeleteSubject] = useState<Subject | null>(null);
-  const [currentTeacherId, setCurrentTeacherId] = useState<number | null>(null);
-  const [currentStudentId, setCurrentStudentId] = useState<number | null>(null);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -43,26 +64,17 @@ export default function SubjectsPage() {
   const limit = 10;
 
   // Filters
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedClass, setSelectedClass] = useState<string>('');
-  const [selectedBoard, setSelectedBoard] = useState<string>('');
-  const [selectedType, setSelectedType] = useState<string>('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedClass, setSelectedClass] = useState<string>("");
+  const [selectedBoard, setSelectedBoard] = useState<string>("");
+  const [selectedType, setSelectedType] = useState<string>("");
 
-  useEffect(() => {
-    fetchBoards();
-    fetchClasses();
-    fetchCurrentTeacher();
-    fetchCurrentStudent();
-  }, []);
-
-  useEffect(() => {
-    fetchSubjects();
-  }, [currentPage, searchTerm, selectedClass, selectedBoard, selectedType, currentTeacherId, currentStudentId]);
-
-  const fetchSubjects = async () => {
+  /** Fetch subjects */
+  const fetchSubjects = useCallback(async () => {
     setIsLoading(true);
+
     try {
-      const params: any = {
+      const params: Record<string, unknown> = {
         page: currentPage,
         limit,
       };
@@ -70,214 +82,219 @@ export default function SubjectsPage() {
       if (searchTerm) params.search = searchTerm;
       if (selectedClass) params.class_id = parseInt(selectedClass);
       if (selectedBoard) params.board_id = parseInt(selectedBoard);
-      if (selectedType) params.is_course = selectedType === 'course';
+      if (selectedType)
+        params.is_course = selectedType === "course" ? true : false;
 
-      // If user is a teacher, only show subjects assigned to them
-      if (user?.role === 'TEACHER' && user?.id) {
+      // Teacher filter
+      if (user?.role === "TEACHER" && user.id) {
         params.user_id = user.id;
-        params.role = user.role;
+        params.role = "TEACHER";
       }
 
-      // If user is a student, only show subjects they're enrolled in
-      if (user?.role === 'STUDENT' && user?.id) {
+      // Student filter
+      if (user?.role === "STUDENT" && user.id) {
         params.user_id = user.id;
-        params.role = user.role;
+        params.role = "STUDENT";
       }
 
       const response = await subjectService.getAll(params);
+
       setSubjects(response.data.data);
       setTotalPages(response.data.pagination.totalPages);
       setTotal(response.data.pagination.total);
     } catch (error) {
-      console.error('Failed to fetch subjects:', error);
+      console.error("Failed to fetch subjects:", error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [
+    currentPage,
+    searchTerm,
+    selectedClass,
+    selectedBoard,
+    selectedType,
+    user,
+  ]);
 
-  const fetchBoards = async () => {
-    try {
-      const response = await boardService.getAll({ limit: 100 });
-      setBoards(response.data.data);
-    } catch (error) {
-      console.error('Failed to fetch boards:', error);
-    }
-  };
-
-  const fetchClasses = async () => {
-    try {
-      const response = await classService.getAll({ limit: 100 });
-      setClasses(response.data.data);
-    } catch (error) {
-      console.error('Failed to fetch classes:', error);
-    }
-  };
-
-  const fetchCurrentTeacher = async () => {
-    if (!user || user.role !== 'TEACHER') return;
-    
-    try {
-      // We need to find the teacher profile for the current user
-      // Since we don't have a direct endpoint, we'll search teachers by user email
-      const response = await teacherService.getAll({ 
-        search: user.email,
-        limit: 1 
-      });
-      
-      if (response.data.data.length > 0) {
-        setCurrentTeacherId(response.data.data[0].id);
+  /** Initial fetch: boards & classes */
+  useEffect(() => {
+    const fetchBoards = async () => {
+      try {
+        const res = await boardService.getAll({ limit: 100 });
+        setBoards(res.data.data);
+      } catch (err) {
+        console.error("Failed to fetch boards:", err);
       }
-    } catch (error) {
-      console.error('Failed to fetch current teacher:', error);
-    }
-  };
+    };
 
-  const fetchCurrentStudent = async () => {
-    if (!user || user.role !== 'STUDENT') return;
-    
-    try {
-      // We need to find the student profile for the current user
-      // Since we don't have a direct endpoint, we'll search students by user email
-      const response = await studentService.getAll({ 
-        search: user.email,
-        limit: 1 
-      });
-      
-      if (response.data.data.length > 0) {
-        setCurrentStudentId(response.data.data[0].id);
+    const fetchClasses = async () => {
+      try {
+        const res = await classService.getAll({ limit: 100 });
+        setClasses(res.data.data);
+      } catch (err) {
+        console.error("Failed to fetch classes:", err);
       }
-    } catch (error) {
-      console.error('Failed to fetch current student:', error);
-    }
-  };
+    };
+
+    fetchBoards();
+    fetchClasses();
+  }, []);
+
+  /** Fetch subjects on filter/pagination change */
+  useEffect(() => {
+    fetchSubjects();
+  }, [fetchSubjects]);
 
   const handleDelete = async () => {
     if (!deleteSubject) return;
-
     try {
       await subjectService.delete(deleteSubject.id);
       setDeleteSubject(null);
       fetchSubjects();
     } catch (error) {
-      console.error('Failed to delete subject:', error);
+      console.error("Failed to delete subject:", error);
     }
   };
 
-  const handleSearch = (value: string) => {
-    setSearchTerm(value);
-    setCurrentPage(1);
-  };
-
-  const handleFilterChange = () => {
-    setCurrentPage(1);
-  };
-
   const clearFilters = () => {
-    setSearchTerm('');
-    setSelectedClass('');
-    setSelectedBoard('');
-    setSelectedType('');
+    setSearchTerm("");
+    setSelectedClass("");
+    setSelectedBoard("");
+    setSelectedType("");
     setCurrentPage(1);
   };
 
-  const isAdmin = user?.role === 'ADMIN';
+  const isAdmin = user?.role === "ADMIN";
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Subjects</h1>
-          <p className="text-muted-foreground mt-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-600">
+            Subjects
+          </h1>
+          <p className="text-gray-400 mt-1 text-sm sm:text-base">
             Manage subjects and courses
           </p>
         </div>
+
         {isAdmin && (
-          <Button onClick={() => navigate('/dashboard/subjects/new')}>
+          <Button
+            onClick={() => navigate("/dashboard/subjects/new")}
+            className="w-full md:w-auto flex justify-center"
+          >
             <Plus className="mr-2 h-4 w-4" />
             Add Subject
           </Button>
         )}
       </div>
 
-      {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Filters</CardTitle>
-          <CardDescription>Filter subjects by various criteria</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-            <div className="flex items-center space-x-2">
-              <Search className="h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by name..."
-                value={searchTerm}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="flex-1"
-              />
-            </div>
-            <Select value={selectedClass} onValueChange={(value) => {
-              setSelectedClass(value);
-              handleFilterChange();
-            }}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select Class" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Classes</SelectItem>
-                {classes.map((cls) => (
-                  <SelectItem key={cls.id} value={cls.id.toString()}>
-                    {cls.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={selectedBoard} onValueChange={(value) => {
-              setSelectedBoard(value);
-              handleFilterChange();
-            }}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select Board" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Boards</SelectItem>
-                {boards.map((board) => (
-                  <SelectItem key={board.id} value={board.id.toString()}>
-                    {board.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={selectedType} onValueChange={(value) => {
-              setSelectedType(value);
-              handleFilterChange();
-            }}>
-              <SelectTrigger>
-                <SelectValue placeholder="Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="subject">Subject</SelectItem>
-                <SelectItem value="course">Course</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button variant="outline" onClick={clearFilters} className="w-full">
-              Clear Filters
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Subjects Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>All Subjects ({total})</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-xl text-gray-600">
+            All Subjects ({total})
+          </CardTitle>
+          <CardDescription className="text-gray-400">
             A list of all subjects in the system
           </CardDescription>
         </CardHeader>
+
         <CardContent>
+          {/* Filters */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-4 mb-4 items-end">
+            <div className="md:col-span-5">
+              <Input
+                placeholder="Search by name..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <Select
+                value={selectedClass}
+                onValueChange={(val) => {
+                  setSelectedClass(val === "all" ? "" : val);
+                  setCurrentPage(1);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Classes" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Classes</SelectItem>
+                  {classes.map((cls) => (
+                    <SelectItem key={cls.id} value={cls.id.toString()}>
+                      {cls.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="md:col-span-2">
+              <Select
+                value={selectedBoard}
+                onValueChange={(val) => {
+                  setSelectedBoard(val === "all" ? "" : val);
+                  setCurrentPage(1);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Boards" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Boards</SelectItem>
+                  {boards.map((b) => (
+                    <SelectItem key={b.id} value={b.id.toString()}>
+                      {b.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="md:col-span-2">
+              <Select
+                value={selectedType}
+                onValueChange={(val) => {
+                  setSelectedType(val === "all" ? "" : val);
+                  setCurrentPage(1);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="subject">Subject</SelectItem>
+                  <SelectItem value="course">Course</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="md:col-span-1 flex justify-end">
+              <Button
+                variant="outline"
+                onClick={clearFilters}
+                disabled={
+                  !searchTerm &&
+                  !selectedClass &&
+                  !selectedBoard &&
+                  !selectedType
+                }
+                className="w-full md:w-auto"
+              >
+                Clear
+              </Button>
+            </div>
+          </div>
+
+          {/* Table */}
           {isLoading ? (
             <div className="flex items-center justify-center h-64">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -286,117 +303,240 @@ export default function SubjectsPage() {
             <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
               <BookOpen className="h-12 w-12 mb-4" />
               <p className="text-lg font-medium">No subjects found</p>
-              <p className="text-sm">Try adjusting your filters or add a new subject</p>
+              <p className="text-sm">Try adjusting your filters</p>
             </div>
           ) : (
             <>
-              <div className="rounded-md border overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Class</TableHead>
-                      <TableHead>Board</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Teachers</TableHead>
-                      <TableHead>Enrollments</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {subjects.map((subject) => (
-                      <TableRow key={subject.id}>
-                        <TableCell className="font-medium">
-                          <div className="flex items-center space-x-2">
-                            <BookOpen className="h-4 w-4 text-primary" />
-                            <span>{subject.name}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {subject.class ? (
-                            <Badge variant="outline">{subject.class.name}</Badge>
-                          ) : (
-                            <span className="text-muted-foreground text-sm">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {subject.board ? (
-                            <Badge variant="outline">{subject.board.name}</Badge>
-                          ) : (
-                            <span className="text-muted-foreground text-sm">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={subject.is_course ? 'default' : 'secondary'}>
-                            {subject.is_course ? 'Course' : 'Subject'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge>{subject._count?.teacher_subject_junctions || 0}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge>{subject._count?.enrollments || 0}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end space-x-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => navigate(`/dashboard/subjects/${subject.id}`)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            {isAdmin && (
-                              <>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => navigate(`/dashboard/subjects/${subject.id}/edit`)}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => setDeleteSubject(subject)}
-                                  className="text-destructive hover:text-destructive"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </TableCell>
+              <div className="rounded-md overflow-hidden border-none lg:border">
+                {/* Desktop Table */}
+                <div className="hidden lg:block">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-saBlue/40 hover:bg-saBlue/40">
+                        <TableHead className="text-gray-900 font-semibold text-md">
+                          Name
+                        </TableHead>
+                        <TableHead className="text-gray-900 font-semibold text-md">
+                          Class
+                        </TableHead>
+                        <TableHead className="text-gray-900 font-semibold text-md">
+                          Board
+                        </TableHead>
+                        <TableHead className="text-gray-900 font-semibold text-md">
+                          Type
+                        </TableHead>
+                        <TableHead className="text-gray-900 font-semibold text-md">
+                          Teachers
+                        </TableHead>
+                        <TableHead className="text-gray-900 font-semibold text-md">
+                          Enrollments
+                        </TableHead>
+                        <TableHead className="text-gray-900 font-semibold text-md text-right">
+                          Actions
+                        </TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+
+                    <TableBody>
+                      {subjects.map((subject, index) => (
+                        <TableRow
+                          key={subject.id}
+                          className={
+                            index % 2 === 0
+                              ? "bg-saBlueLight/20"
+                              : "bg-saBlueLight/10"
+                          }
+                        >
+                          <TableCell className="font-medium">
+                            {subject.name}
+                          </TableCell>
+
+                          <TableCell>{subject.class?.name || "-"}</TableCell>
+
+                          <TableCell>{subject.board?.name || "-"}</TableCell>
+
+                          <TableCell>
+                            {subject.is_course ? "Course" : "Subject"}
+                          </TableCell>
+
+                          <TableCell>
+                            {subject._count?.teacher_subject_junctions || 0}
+                          </TableCell>
+
+                          <TableCell>
+                            {subject._count?.enrollments || 0}
+                          </TableCell>
+
+                          <TableCell className="text-right">
+                            <div className="flex space-x-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-saBlue hover:text-saBlueDarkHover cursor-pointer"
+                                onClick={() =>
+                                  navigate(`/dashboard/subjects/${subject.id}`)
+                                }
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+
+                              {isAdmin && (
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="text-saVividOrange hover:text-[#d18a00] cursor-pointer"
+                                    onClick={() =>
+                                      navigate(
+                                        `/dashboard/subjects/${subject.id}/edit`
+                                      )
+                                    }
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="text-red-600 hover:text-red-800 cursor-pointer"
+                                    onClick={() =>
+                                      setDeleteSubject(subject)
+                                    }
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Mobile Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:hidden gap-4 px-0">
+                  {subjects.map((subject) => (
+                    <div
+                      key={subject.id}
+                      className="rounded-xl overflow-hidden shadow-sm transition hover:shadow-md duration-200"
+                    >
+                      {/* Header */}
+                      <div className="bg-saBlueLight/60 p-4 flex justify-between items-center">
+                        <div className="font-semibold text-lg text-gray-900 truncate">
+                          {subject.name}
+                        </div>
+
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-saBlue hover:text-saBlueDarkHover"
+                            onClick={() =>
+                              navigate(`/dashboard/subjects/${subject.id}`)
+                            }
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+
+                          {isAdmin && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-saVividOrange hover:text-[#d18a00]"
+                                onClick={() =>
+                                  navigate(
+                                    `/dashboard/subjects/${subject.id}/edit`
+                                  )
+                                }
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-red-600 hover:text-red-800"
+                                onClick={() => setDeleteSubject(subject)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Body */}
+                      <div className="p-4 bg-gray-100">
+                        <div className="grid grid-cols-2 gap-2 text-sm text-gray-700">
+                          <div>
+                            <span className="font-medium">Class</span>
+                            <p>{subject.class?.name || "-"}</p>
+                          </div>
+
+                          <div>
+                            <span className="font-medium">Board</span>
+                            <p>{subject.board?.name || "-"}</p>
+                          </div>
+
+                          <div>
+                            <span className="font-medium">Type</span>
+                            <p>{subject.is_course ? "Course" : "Subject"}</p>
+                          </div>
+
+                          <div>
+                            <span className="font-medium">Teachers</span>
+                            <p>
+                              {subject._count?.teacher_subject_junctions || 0}
+                            </p>
+                          </div>
+
+                          <div className="col-span-2">
+                            <span className="font-medium">Enrollments</span>
+                            <p>{subject._count?.enrollments || 0}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* Pagination */}
-              <div className="flex items-center justify-between mt-4">
-                <p className="text-sm text-muted-foreground">
-                  Showing {(currentPage - 1) * limit + 1} to{' '}
+              <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-2">
+                <p className="text-sm text-muted-foreground text-center sm:text-left w-full sm:w-auto">
+                  Showing {(currentPage - 1) * limit + 1} to{" "}
                   {Math.min(currentPage * limit, total)} of {total} subjects
                 </p>
-                <div className="flex items-center space-x-2">
+
+                <div className="flex items-center space-x-2 justify-center w-full sm:w-auto">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                    className="rounded"
                     disabled={currentPage === 1}
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(prev - 1, 1))
+                    }
                   >
                     <ChevronLeft className="h-4 w-4 mr-1" />
                     Previous
                   </Button>
-                  <div className="text-sm">
+
+                  <span className="text-sm">
                     Page {currentPage} of {totalPages}
-                  </div>
+                  </span>
+
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                    className="rounded"
                     disabled={currentPage === totalPages}
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                    }
                   >
                     Next
                     <ChevronRight className="h-4 w-4 ml-1" />
@@ -408,7 +548,6 @@ export default function SubjectsPage() {
         </CardContent>
       </Card>
 
-      {/* Delete Confirmation Dialog */}
       {isAdmin && (
         <DeleteSubjectDialog
           subject={deleteSubject}

@@ -288,7 +288,7 @@ export default function StudentsPage() {
                 <div className="hidden lg:block">
                   <Table>
                     <TableHeader>
-                      <TableRow className="bg-saBlue/40">
+                      <TableRow className="bg-saBlue/40 hover:bg-saBlue/40">
                         <TableHead className="text-gray-900 font-semibold text-md">
                           Name
                         </TableHead>

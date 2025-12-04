@@ -1,13 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Clock, Users, FileText, Calendar } from 'lucide-react';
-import { testService } from '@/services/api';
+import { testService, subjectService } from '@/services/api';
 import type { Test, Subject } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { subjectService } from '@/services/api';
 import { useAuthStore } from '@/store/authStore';
+
+interface FetchParams {
+  user_id?: number;
+  role?: string;
+  subject_id?: number;
+}
 
 export default function TestsPage() {
   const [tests, setTests] = useState<Test[]>([]);
@@ -20,48 +25,35 @@ export default function TestsPage() {
   const isTeacherOrAdmin = user?.role === 'TEACHER' || user?.role === 'ADMIN';
   const isStudent = user?.role === 'STUDENT';
 
-  useEffect(() => {
-    fetchSubjects();
-    fetchTests();
-  }, [selectedSubject]);
+const fetchSubjects = useCallback(async () => {
+  try {
+    const params: {
+      teacher_id?: number;
+      student_id?: number;
+    } = {};
 
-  const fetchSubjects = async () => {
-    try {
-      const params: any = {};
-      // For students, only fetch subjects they are enrolled in
-      if (isStudent && user?.id) {
-        params.user_id = user.id;
-        params.role = user.role;
-      }
-      // For teachers, only fetch subjects they teach
-      if (user?.role === 'TEACHER' && user?.id) {
-        params.user_id = user.id;
-        params.role = user.role;
-      }
-      const response = await subjectService.getAll(params);
-      setSubjects(response.data.data);
-    } catch (error) {
-      console.error('Error fetching subjects:', error);
+    if (user?.id) {
+      if (user.role === 'TEACHER') params.teacher_id = user.id;
+      if (user.role === 'STUDENT') params.student_id = user.id;
     }
-  };
 
-  const fetchTests = async () => {
+    const response = await subjectService.getAll(params);
+    setSubjects(response.data.data);
+  } catch (error) {
+    console.error('Error fetching subjects:', error);
+  }
+}, [user]);
+
+
+  const fetchTests = useCallback(async () => {
     try {
       setLoading(true);
-      const params: any = {};
+      const params: FetchParams = {};
       if (selectedSubject) params.subject_id = selectedSubject;
-      
-      // For students, only fetch tests from subjects they are enrolled in
-      if (user?.role === 'STUDENT' && user?.id) {
+      if ((isStudent || user?.role === 'TEACHER') && user?.id) {
         params.user_id = user.id;
         params.role = user.role;
       }
-      // For teachers, only fetch tests from subjects they teach
-      if (user?.role === 'TEACHER' && user?.id) {
-        params.user_id = user.id;
-        params.role = user.role;
-      }
-      
       const response = await testService.getAll(params);
       setTests(response.data);
     } catch (error) {
@@ -69,11 +61,15 @@ export default function TestsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedSubject, user, isStudent]);
+
+  useEffect(() => {
+    fetchSubjects();
+    fetchTests();
+  }, [fetchSubjects, fetchTests]);
 
   const handleDeleteTest = async (testId: number) => {
     if (!confirm('Are you sure you want to delete this test?')) return;
-
     try {
       await testService.delete(testId);
       fetchTests();
@@ -89,20 +85,24 @@ export default function TestsPage() {
     const availableUntil = new Date(test.available_until);
 
     if (!test.is_published) return { label: 'Draft', color: 'bg-gray-500' };
-    if (now < availableFrom) return { label: 'Upcoming', color: 'bg-blue-500' };
+    if (now < availableFrom) return { label: 'Upcoming', color: 'bg-blue-400' };
     if (now > availableUntil) return { label: 'Closed', color: 'bg-red-500' };
     return { label: 'Active', color: 'bg-green-500' };
   };
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
+   <div className="p-2 sm:p-0">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Tests</h1>
-          <p className="text-gray-600 mt-1">Manage and view all tests</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-600">Tests</h1>
+          <p className="text-gray-400 mt-1 text-sm sm:text-base">Manage and view all tests</p>
         </div>
         {isTeacherOrAdmin && (
-          <Button onClick={() => navigate('/tests/create')}>
+          <Button
+            className="bg-saBlue hover:bg-saBlueDarkHover text-white w-full sm:w-auto flex items-center justify-center"
+            onClick={() => navigate('/tests/create')}
+          >
             <Plus className="w-4 h-4 mr-2" />
             Create Test
           </Button>
@@ -111,14 +111,14 @@ export default function TestsPage() {
 
       {/* Filters */}
       <Card className="mb-6">
-        <CardContent className="pt-6">
-          <div className="flex items-center gap-4">
-            <div className="flex-1">
-              <label className="block text-sm font-medium mb-2">Filter by Subject</label>
+        <CardContent className="pt-4 sm:pt-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="flex-1 w-full">
+              <label className="block text-sm font-medium mb-2 text-gray-600">Filter by Subject</label>
               <select
                 value={selectedSubject || ''}
                 onChange={(e) => setSelectedSubject(e.target.value ? parseInt(e.target.value) : null)}
-                className="w-full p-2 border rounded-md"
+                className="w-full p-2 border rounded-md text-sm sm:text-base"
               >
                 <option value="">All Subjects</option>
                 {subjects.map((subject) => (
@@ -134,95 +134,107 @@ export default function TestsPage() {
 
       {/* Tests Grid */}
       {loading ? (
-        <div className="text-center py-12">Loading tests...</div>
+        <div className="text-center py-12 text-gray-600">Loading tests...</div>
       ) : tests.length === 0 ? (
         <Card>
           <CardContent className="text-center py-12">
             <FileText className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-            <p className="text-gray-600">No tests found</p>
+            <p className="text-gray-600 mb-4">No tests found</p>
             {isTeacherOrAdmin && (
-              <Button onClick={() => navigate('/tests/create')} className="mt-4">
+              <Button
+                className="bg-saBlue hover:bg-saBlueDarkHover text-white mt-2 w-full sm:w-auto"
+                onClick={() => navigate('/tests/create')}
+              >
                 Create Your First Test
               </Button>
             )}
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {tests.map((test) => {
             const status = getTestStatus(test);
             return (
               <Card
                 key={test.id}
-                className="hover:shadow-lg transition-shadow cursor-pointer"
+                className="cursor-pointer shadow-md hover:shadow-xl transition-all duration-300 rounded-2xl overflow-hidden flex flex-col"
                 onClick={() => navigate(`/tests/${test.id}`)}
               >
-                <CardHeader>
+                {/* Curved Header */}
+                <div className="relative bg-saBlueLight/60 text-gray-900 p-4 sm:p-5">
                   <div className="flex items-start justify-between">
-                    <CardTitle className="text-lg">{test.title}</CardTitle>
-                    <Badge className={status.color}>{status.label}</Badge>
+                    <CardTitle className="text-md sm:text-lg font-semibold">{test.title}</CardTitle>
+                    <Badge
+                      className={`text-white text-xs sm:text-sm font-medium px-2 sm:px-3 py-1 rounded-full ${
+                        status.color === 'bg-gray-500'
+                          ? 'bg-gray-600'
+                          : status.color === 'bg-blue-400'
+                          ? 'bg-saBlueLight'
+                          : status.color === 'bg-red-500'
+                          ? 'bg-red-600'
+                          : 'bg-green-600'
+                      }`}
+                    >
+                      {status.label}
+                    </Badge>
                   </div>
-                  <p className="text-sm text-gray-600">{test.subject?.name}</p>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-700 mb-4 line-clamp-2">
-                    {test.description || 'No description'}
-                  </p>
+                  <p className="text-xs sm:text-sm mt-1 opacity-80">{test.subject?.name}</p>
+                </div>
 
-                  <div className="space-y-2">
-                    <div className="flex items-center text-sm text-gray-600">
-                      <FileText className="w-4 h-4 mr-2" />
-                      <span>{test._count?.questions || 0} questions</span>
+                {/* Body */}
+                <CardContent className="bg-gray-100 rounded-b-2xl pt-8 sm:pt-10 p-4 sm:p-5 space-y-3 sm:space-y-4 text-gray-700 flex-1 flex flex-col justify-between">
+                  <p className="text-sm sm:text-base line-clamp-3">{test.description || 'No description'}</p>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-2 gap-2 sm:gap-4 text-gray-700 text-xs sm:text-sm">
+                    <div className="flex items-center gap-1 sm:gap-2">
+                      <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-saBlue" />
+                      {test._count?.questions || 0} Questions
                     </div>
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Clock className="w-4 h-4 mr-2" />
-                      <span>{test.duration_minutes} minutes</span>
+                    <div className="flex items-center gap-1 sm:gap-2">
+                      <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-saBlue" />
+                      {test.duration_minutes} Minutes
                     </div>
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Users className="w-4 h-4 mr-2" />
-                      <span>{test._count?.test_attempts || 0} attempts</span>
+                    <div className="flex items-center gap-1 sm:gap-2">
+                      <Users className="w-4 h-4 sm:w-5 sm:h-5 text-saBlue" />
+                      {test._count?.test_attempts || 0} Attempts
                     </div>
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Calendar className="w-4 h-4 mr-2" />
-                      <span>
+                    <div className="flex items-center gap-1 sm:gap-2">
+                      <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-saBlue" />
+                      <span className="text-xs sm:text-sm">
                         {new Date(test.available_from).toLocaleDateString()} -{' '}
                         {new Date(test.available_until).toLocaleDateString()}
                       </span>
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-4 border-t flex items-center justify-between">
-                    <div className="text-sm">
-                      <span className="text-gray-600">Marks: </span>
-                      <span className="font-medium">{test.total_marks}</span>
-                      <span className="text-gray-600"> (Pass: {test.passing_marks})</span>
-                    </div>
-                  </div>
-
                   {isTeacherOrAdmin && (
-                    <div className="mt-4 flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="flex-1"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/tests/${test.id}/edit`);
-                        }}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteTest(test.id);
-                        }}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        Delete
-                      </Button>
+                    <div className="pt-2 sm:pt-3 border-t border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center text-xs sm:text-sm gap-2">
+                      <span>
+                        Marks: <span className="font-medium">{test.total_marks}</span> (Pass: {test.passing_marks})
+                      </span>
+                      <div className="flex gap-2 w-full sm:w-auto">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-gray-300 text-gray-800 hover:bg-saBlue hover:text-white flex-1 sm:flex-none"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/tests/${test.id}/edit`);
+                          }}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="bg-saVividOrange text-white hover:bg-saBlueDarkHover flex-1 sm:flex-none"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteTest(test.id);
+                          }}
+                        >
+                          Delete
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </CardContent>
