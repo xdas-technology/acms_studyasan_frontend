@@ -317,10 +317,11 @@ export interface ClassSession {
   mode: 'ONLINE' | 'OFFLINE';
   location: string | null;
   meeting_link: string | null;
+  google_event_id: string | null;
   start_time: string;
   end_time: string;
   is_recurring: boolean;
-  recurrence_rule: any;
+  recurrence_rule: RecurrenceRule | null;
   created_by: number;
   created_at: string;
   updated_at: string;
@@ -355,6 +356,14 @@ export interface ClassSession {
   attendances?: ClassSessionAttendance[];
 }
 
+export interface RecurrenceRule {
+  frequency: 'daily' | 'weekly' | 'monthly';
+  interval?: number;
+  daysOfWeek?: number[];
+  endDate?: string;
+  count?: number;
+}
+
 export interface ClassSessionAttendance {
   id: number;
   class_session_id: number;
@@ -385,7 +394,10 @@ export interface CreateClassSessionData {
   start_time: string;
   end_time: string;
   is_recurring?: boolean;
-  recurrence_rule?: any;
+  recurrence_rule?: RecurrenceRule | null;
+  title?: string;
+  description?: string;
+  create_google_meet?: boolean;
 }
 
 export interface UpdateClassSessionData {
@@ -399,7 +411,27 @@ export interface UpdateClassSessionData {
   start_time?: string;
   end_time?: string;
   is_recurring?: boolean;
-  recurrence_rule?: any;
+  recurrence_rule?: RecurrenceRule | null;
+}
+
+export interface WeeklyScheduleResponse {
+  weekStart: string;
+  weekEnd: string;
+  sessions: { [key: string]: ClassSession[] };
+  totalSessions: number;
+}
+
+export interface CanJoinSessionResponse {
+  canJoin: boolean;
+  reason: string;
+  session: {
+    id: number;
+    start_time: string;
+    end_time: string;
+    mode: 'ONLINE' | 'OFFLINE';
+    meeting_link: string | null;
+    location: string | null;
+  };
 }
 
 export interface RecordAttendanceData {

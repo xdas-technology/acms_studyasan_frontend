@@ -48,6 +48,11 @@ import type {
   Message,
   StartChatData,
   SendMessageData,
+  ClassSession,
+  CreateClassSessionData,
+  UpdateClassSessionData,
+  WeeklyScheduleResponse,
+  CanJoinSessionResponse,
   ChatMessagesResponse,
 } from '@/types';
 
@@ -623,6 +628,99 @@ export const testAttemptService = {
   // Grade test attempt
   gradeAttempt: async (attemptId: number, data: GradeTestData): Promise<{ success: boolean; data: TestAttempt }> => {
     const response = await api.post(`/test-attempts/${attemptId}/grade`, data);
+    return response.data;
+  },
+};
+
+export const classSessionService = {
+  // Get all class sessions
+  getAll: async (params?: {
+    page?: number;
+    limit?: number;
+    teacher_id?: number;
+    subject_id?: number;
+    class_id?: number;
+    board_id?: number;
+    mode?: 'ONLINE' | 'OFFLINE';
+    start_date?: string;
+    end_date?: string;
+  }): Promise<PaginatedResponse<ClassSession>> => {
+    const response = await api.get<PaginatedResponse<ClassSession>>('/class-sessions', { params });
+    return response.data;
+  },
+
+  // Get session by ID
+  getById: async (id: number): Promise<{ success: boolean; data: ClassSession }> => {
+    const response = await api.get(`/class-sessions/${id}`);
+    return response.data;
+  },
+
+  // Get upcoming sessions
+  getUpcoming: async (params?: {
+    teacher_id?: number;
+    subject_id?: number;
+    limit?: number;
+  }): Promise<{ success: boolean; data: ClassSession[] }> => {
+    const response = await api.get('/class-sessions/upcoming', { params });
+    return response.data;
+  },
+
+  // Get past sessions
+  getPast: async (params?: {
+    teacher_id?: number;
+    subject_id?: number;
+    limit?: number;
+  }): Promise<{ success: boolean; data: ClassSession[] }> => {
+    const response = await api.get('/class-sessions/past', { params });
+    return response.data;
+  },
+
+  // Get my scheduled sessions (for students)
+  getMySchedule: async (params?: {
+    page?: number;
+    limit?: number;
+    upcoming_only?: boolean;
+    subject_id?: number;
+  }): Promise<PaginatedResponse<ClassSession>> => {
+    const response = await api.get<PaginatedResponse<ClassSession>>('/class-sessions/my-schedule', { params });
+    return response.data;
+  },
+
+  // Get today's sessions
+  getToday: async (): Promise<{ success: boolean; data: ClassSession[] }> => {
+    const response = await api.get('/class-sessions/today');
+    return response.data;
+  },
+
+  // Get weekly schedule
+  getWeeklySchedule: async (params?: {
+    week_offset?: number;
+  }): Promise<{ success: boolean; data: WeeklyScheduleResponse }> => {
+    const response = await api.get('/class-sessions/weekly', { params });
+    return response.data;
+  },
+
+  // Check if user can join session
+  canJoin: async (id: number): Promise<{ success: boolean; data: CanJoinSessionResponse }> => {
+    const response = await api.get(`/class-sessions/${id}/can-join`);
+    return response.data;
+  },
+
+  // Create class session
+  create: async (data: CreateClassSessionData): Promise<{ success: boolean; data: ClassSession }> => {
+    const response = await api.post('/class-sessions', data);
+    return response.data;
+  },
+
+  // Update class session
+  update: async (id: number, data: UpdateClassSessionData): Promise<{ success: boolean; data: ClassSession }> => {
+    const response = await api.put(`/class-sessions/${id}`, data);
+    return response.data;
+  },
+
+  // Delete class session
+  delete: async (id: number): Promise<{ success: boolean; message: string }> => {
+    const response = await api.delete(`/class-sessions/${id}`);
     return response.data;
   },
 };

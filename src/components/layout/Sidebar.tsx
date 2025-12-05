@@ -17,6 +17,7 @@ import {
   X,
   ChevronsLeft,
   ChevronsRight,
+  Video,
 } from "lucide-react";
 import { createPortal } from "react-dom";
 
@@ -50,6 +51,12 @@ const navItems: NavItem[] = [
     title: "Subjects",
     href: "/dashboard/subjects",
     icon: BookOpen,
+    roles: ["ADMIN", "TEACHER", "STUDENT"],
+  },
+  {
+    title: "Class Sessions",
+    href: "/dashboard/class-sessions",
+    icon: Video,
     roles: ["ADMIN", "TEACHER", "STUDENT"],
   },
   {

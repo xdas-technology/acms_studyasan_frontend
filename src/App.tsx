@@ -58,6 +58,11 @@ import MyResultsPage from '@/pages/tests/MyResultsPage';
 import ChatsPageNew from '@/pages/chats/ChatsPageNew';
 import AdminChatsPage from '@/pages/chats/AdminChatsPage';
 
+// Class Session imports
+import ClassSessionsPage from '@/pages/class-sessions/ClassSessionsPage';
+import ClassSessionDetailPage from '@/pages/class-sessions/ClassSessionDetailPage';
+import CreateClassSessionPage from '@/pages/class-sessions/CreateClassSessionPage';
+
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -157,6 +162,12 @@ function App() {
           
           {/* Admin Chat Routes */}
           <Route path="admin/chats" element={<AdminChatsPage />} />
+          
+          {/* Class Session Routes */}
+          <Route path="class-sessions" element={<ClassSessionsPage />} />
+          <Route path="class-sessions/create" element={<CreateClassSessionPage />} />
+          <Route path="class-sessions/:id" element={<ClassSessionDetailPage />} />
+          <Route path="class-sessions/:id/edit" element={<CreateClassSessionPage />} />
           
           <Route path="profile" element={<div>Profile Page - Coming Soon</div>} />
           <Route path="settings" element={<div>Settings Page - Coming Soon</div>} />
