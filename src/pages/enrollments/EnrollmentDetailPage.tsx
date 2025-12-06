@@ -6,7 +6,7 @@ import type { Enrollment } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { DeleteEnrollmentDialog } from '@/components/enrollments/DeleteEnrollmentDialog';
+import DeleteConfirmationModal from '@/components/ui/deleteConfirmationModal';
 import { useAuthStore } from '@/store/authStore';
 
 const EnrollmentDetailPage: React.FC = () => {
@@ -15,7 +15,7 @@ const EnrollmentDetailPage: React.FC = () => {
   const { user } = useAuthStore();
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
   const [loading, setLoading] = useState(true);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   const isAdmin = user?.role === 'ADMIN';
   const isStudent = user?.role === 'STUDENT';
@@ -32,7 +32,6 @@ const EnrollmentDetailPage: React.FC = () => {
       const response = await enrollmentService.getById(enrollmentId);
       const enrollmentData = response.data;
 
-      // Role-based access control
       if (isStudent && enrollmentData.student_id !== user?.id) {
         navigate('/dashboard/enrollments');
         return;
@@ -48,7 +47,7 @@ const EnrollmentDetailPage: React.FC = () => {
   };
 
   const handleDelete = () => {
-    setDeleteDialogOpen(true);
+    setDeleteModalOpen(true);
   };
 
   const confirmDelete = async () => {
@@ -65,10 +64,8 @@ const EnrollmentDetailPage: React.FC = () => {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
-      month: 'long',
+      month: 'short',
       day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
     });
   };
 
@@ -86,10 +83,7 @@ const EnrollmentDetailPage: React.FC = () => {
         event: 'Last Updated',
         description: 'Enrollment details were last modified',
       },
-    ].filter((item, index, arr) => {
-      // Remove duplicates if created_on and updated_on are the same
-      return index === 0 || item.date !== arr[index - 1].date;
-    });
+    ].filter((item, index, arr) => index === 0 || item.date !== arr[index - 1].date);
   };
 
   if (loading) {
@@ -106,8 +100,10 @@ const EnrollmentDetailPage: React.FC = () => {
   if (!enrollment) {
     return (
       <div className="text-center py-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Enrollment not found</h2>
-        <p className="text-gray-600 mb-4">The enrollment you're looking for doesn't exist or you don't have permission to view it.</p>
+        <h2 className="text-2xl font-bold text-gray-500 mb-2">Enrollment not found</h2>
+        <p className="text-gray-600 mb-4">
+          The enrollment you're looking for doesn't exist or you don't have permission to view it.
+        </p>
         <Link to="/dashboard/enrollments">
           <Button>
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -122,62 +118,73 @@ const EnrollmentDetailPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        {/* Left Side: Back + Title */}
+        <div className="sm:flex-row items-start sm:items-center gap-4">
+          <div
             onClick={() => navigate('/dashboard/enrollments')}
+            className="inline-flex items-center text-sm sm:text-base text-blue-600 hover:underline cursor-pointer"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 mr-1" />
             Back to Enrollments
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Enrollment Details</h1>
-            <p className="text-gray-600 mt-1">Enrollment #{enrollment.id}</p>
+          </div>
+
+          <div className="flex flex-col">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-600">Enrollment Details</h1>
+            <p className="text-gray-400 mt-1 text-sm sm:text-base">
+              View and manage enrollment information
+            </p>
           </div>
         </div>
+
+        {/* Right Side: Admin Actions */}
         {isAdmin && (
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={handleDelete} className="text-red-600 hover:text-red-700">
-              <Trash2 className="h-4 w-4 mr-2" />
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+            <Button
+              variant="outline"
+              onClick={handleDelete}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-saVividOrange text-white hover:text-white hover:bg-saVividOrange"
+            >
+              <Trash2 className="h-4 w-4" />
               Delete Enrollment
             </Button>
           </div>
         )}
       </div>
 
+      {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Details */}
         <div className="lg:col-span-2 space-y-6">
           {/* Student Information */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Student Information
+              <CardTitle className="flex items-center gap-2 text-xl text-gray-600">
+                <User className="h-5 w-5" /> Student Information
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Name</label>
-                  <p className="text-lg font-semibold text-gray-900">{enrollment.student.user.name}</p>
+                  <label className="text-sm font-medium text-gray-600">Name</label>
+                  <p className="text-lg font-semibold text-gray-500">{enrollment.student.user.name}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Email</label>
-                  <p className="text-gray-900">{enrollment.student.user.email}</p>
+                  <label className="text-sm font-medium text-gray-600">Email</label>
+                  <p className="text-gray-500">{enrollment.student.user.email}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Phone</label>
-                  <p className="text-gray-900">{enrollment.student.user.phone}</p>
+                  <label className="text-sm font-medium text-gray-600">Phone</label>
+                  <p className="text-gray-500">{enrollment.student.user.phone}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Class</label>
-                  <p className="text-gray-900">{enrollment.student.class?.name || 'N/A'}</p>
+                  <label className="text-sm font-medium text-gray-600">Class</label>
+                  <p className="text-gray-500">{enrollment.student.class?.name || 'N/A'}</p>
                 </div>
                 <div className="md:col-span-2">
-                  <label className="text-sm font-medium text-gray-500">Board</label>
-                  <p className="text-gray-900">{enrollment.student.board?.name || 'N/A'}</p>
+                  <label className="text-sm font-medium text-gray-600">Board</label>
+                  <p className="text-gray-500">{enrollment.student.board?.name || 'N/A'}</p>
                 </div>
               </div>
             </CardContent>
@@ -186,43 +193,42 @@ const EnrollmentDetailPage: React.FC = () => {
           {/* Subject Information */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5" />
-                Subject Information
+              <CardTitle className="flex items-center gap-2 text-xl text-gray-600">
+                <BookOpen className="h-5 w-5" /> Subject Information
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Subject Name</label>
-                  <p className="text-lg font-semibold text-gray-900">{enrollment.subject.name}</p>
+                  <label className="text-sm font-medium text-gray-600">Subject Name</label>
+                  <p className="text-lg font-semibold text-gray-500">{enrollment.subject.name}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Type</label>
+                  <label className="text-sm font-medium text-gray-600">Type</label>
                   <Badge variant={enrollment.subject.is_course ? 'default' : 'secondary'}>
                     {enrollment.subject.is_course ? 'Course' : 'Subject'}
                   </Badge>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Class</label>
-                  <p className="text-gray-900">{enrollment.subject.class?.name || 'N/A'}</p>
+                  <label className="text-sm font-medium text-gray-600">Class</label>
+                  <p className="text-gray-500">{enrollment.subject.class?.name || 'N/A'}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Board</label>
-                  <p className="text-gray-900">{enrollment.subject.board?.name || 'N/A'}</p>
+                  <label className="text-sm font-medium text-gray-600">Board</label>
+                  <p className="text-gray-500">{enrollment.subject.board?.name || 'N/A'}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Timeline */}
+        {/* Timeline & Quick Actions */}
         <div className="space-y-6">
+          {/* Timeline */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                Timeline
+              <CardTitle className="flex items-center gap-2 text-xl text-gray-600">
+                <Clock className="h-5 w-5" /> Timeline
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -238,10 +244,10 @@ const EnrollmentDetailPage: React.FC = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <Calendar className="h-4 w-4 text-gray-400" />
-                        <span className="text-sm font-medium text-gray-900">{item.event}</span>
+                        <span className="text-sm font-medium text-gray-500">{item.event}</span>
                       </div>
                       <p className="text-sm text-gray-600 mb-1">{item.description}</p>
-                      <p className="text-xs text-gray-500">{formatDate(item.date)}</p>
+                      <p className="text-xs text-gray-600">{formatDate(item.date)}</p>
                     </div>
                   </div>
                 ))}
@@ -252,17 +258,20 @@ const EnrollmentDetailPage: React.FC = () => {
           {/* Quick Actions */}
           <Card>
             <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
+                            <CardTitle className="flex items-center gap-2 text-xl text-gray-600">
+                <Clock className="h-5 w-5" /> Quick Actions
+              </CardTitle>
+          
             </CardHeader>
             <CardContent className="space-y-2">
               <Link to={`/dashboard/students/${enrollment.student.id}`}>
-                <Button variant="outline" className="w-full justify-start">
+                <Button variant="outline" className="w-full justify-start text-gray-500 border border-saBlue/50 mb-2">
                   <User className="h-4 w-4 mr-2" />
                   View Student Profile
                 </Button>
               </Link>
               <Link to={`/dashboard/subjects/${enrollment.subject.id}`}>
-                <Button variant="outline" className="w-full justify-start">
+                <Button variant="outline" className="w-full justify-start text-gray-500 border border-saBlue/50">
                   <BookOpen className="h-4 w-4 mr-2" />
                   View Subject Details
                 </Button>
@@ -272,12 +281,68 @@ const EnrollmentDetailPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Delete Dialog */}
-      <DeleteEnrollmentDialog
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
-        enrollment={enrollment}
-        onConfirm={confirmDelete}
+      {/* Delete Modal */}
+      <DeleteConfirmationModal
+        open={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onCancel={() => setDeleteModalOpen(false)}
+        title={`Delete Enrollment for ${enrollment.student.user.name}?`}
+        message={
+          <div className="grid grid-cols-2 gap-3 text-left text-xs sm:text-sm text-gray-700">
+            {/* Column 1: Student Info */}
+            <div className="space-y-1">
+              <p className="font-medium text-gray-600">Student</p>
+              <p className="font-semibold text-gray-600">{enrollment.student.user.name}</p>
+              <p className="text-gray-600">{enrollment.student.user.email}</p>
+
+              <p className="font-medium text-gray-600 mt-2">Class</p>
+              <p className="font-semibold text-gray-600">{enrollment.student.class?.name || 'N/A'}</p>
+
+              <p className="font-medium text-gray-600 mt-2">Board</p>
+              <p className="font-semibold text-gray-600">{enrollment.student.board?.name || 'N/A'}</p>
+            </div>
+
+            {/* Column 2: Subject Info */}
+            <div className="space-y-1">
+              <p className="font-medium text-gray-600">Subject</p>
+              <p className="font-semibold text-gray-600">{enrollment.subject.name}</p>
+              <div className="flex gap-1 flex-wrap mt-1">
+                <Badge variant="secondary" className="text-[10px] sm:text-xs">
+                  Class: {enrollment.subject.class?.name || 'N/A'}
+                </Badge>
+                {enrollment.subject.is_course && (
+                  <Badge variant="outline" className="text-[10px] sm:text-xs">
+                    Course
+                  </Badge>
+                )}
+              </div>
+
+              <p className="font-medium text-gray-600 mt-2">Enrolled On</p>
+              <p className="font-semibold text-gray-600 text-[10px] sm:text-sm">
+                {formatDate(enrollment.created_on)}
+              </p>
+
+              <p className="text-red-600 text-xs mt-1">*This action cannot be undone</p>
+            </div>
+          </div>
+        }
+        footer={
+          <div className="flex justify-end gap-3 mt-6">
+            <button
+              onClick={() => setDeleteModalOpen(false)}
+              className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmDelete}
+              className="px-6 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 flex items-center gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete
+            </button>
+          </div>
+        }
       />
     </div>
   );

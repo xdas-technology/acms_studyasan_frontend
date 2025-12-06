@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Users, Check } from 'lucide-react';
+import { ArrowLeft, Save, Check } from 'lucide-react';
 import { enrollmentService, studentService, subjectService } from '@/services/api';
 import type { Student, Subject, BulkEnrollmentData } from '@/types';
+import type { AxiosError } from 'axios';
+
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,20 +12,65 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { useAuthStore } from '@/store/authStore';
 
+import SuccessModal from '@/components/ui/successModal';
+import ErrorModal from '@/components/ui/errorModal';
+
 const BulkEnrollmentPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
+
   const [students, setStudents] = useState<Student[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(false);
+
   const [formData, setFormData] = useState<BulkEnrollmentData>({
     student_ids: [],
     subject_id: 0,
   });
-  const [errors, setErrors] = useState<Partial<BulkEnrollmentData>>({});
 
+  const [errors, setErrors] = useState<Partial<BulkEnrollmentData>>({});
   const isAdmin = user?.role === 'ADMIN';
 
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [errorOpen, setErrorOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  // ----------------------------
+  // Fetch Students
+  // ----------------------------
+  const fetchStudents = useCallback(async () => {
+    try {
+      const response = await studentService.getAll({ limit: 100 });
+      setStudents(response.data.data);
+    } catch {
+      setErrorMessage('Failed to load students.');
+      setErrorOpen(true);
+    }
+  }, []);
+
+  // ----------------------------
+  // Fetch Subjects
+  // ----------------------------
+  const fetchSubjects = useCallback(async () => {
+    try {
+      const params: Record<string, unknown> = { limit: 100 };
+
+      if (user?.role === 'TEACHER' && user.id) {
+        params.user_id = user.id;
+        params.role = user.role;
+      }
+
+      const response = await subjectService.getAll(params);
+      setSubjects(response.data.data);
+    } catch {
+      setErrorMessage('Failed to load subjects.');
+      setErrorOpen(true);
+    }
+  }, [user]);
+
+  // ----------------------------
+  // useEffect
+  // ----------------------------
   useEffect(() => {
     if (!isAdmin) {
       navigate('/dashboard/enrollments');
@@ -31,83 +78,63 @@ const BulkEnrollmentPage: React.FC = () => {
     }
     fetchStudents();
     fetchSubjects();
-  }, [isAdmin, navigate]);
+  }, [isAdmin, navigate, fetchStudents, fetchSubjects]);
 
-  const fetchStudents = async () => {
-    try {
-      const response = await studentService.getAll({ limit: 100 });
-      setStudents(response.data.data);
-    } catch (error) {
-      console.error('Error fetching students:', error);
-    }
-  };
-
-  const fetchSubjects = async () => {
-    try {
-      const params: any = { limit: 100 };
-      // For teachers, only show subjects they are assigned to
-      if (user?.role === 'TEACHER' && user?.id) {
-        params.user_id = user.id;
-        params.role = user.role;
-      }
-      const response = await subjectService.getAll(params);
-      setSubjects(response.data.data);
-    } catch (error) {
-      console.error('Error fetching subjects:', error);
-    }
-  };
-
+  // ----------------------------
+  // Validation
+  // ----------------------------
   const validateForm = (): boolean => {
     const newErrors: Partial<BulkEnrollmentData> = {};
 
-    if (formData.student_ids.length === 0) {
-      newErrors.student_ids = [];
-    }
-
-    if (!formData.subject_id) {
-      newErrors.subject_id = 0;
-    }
+    if (formData.student_ids.length === 0) newErrors.student_ids = [];
+    if (!formData.subject_id) newErrors.subject_id = 0;
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  // ----------------------------
+  // Submit Form
+  // ----------------------------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setLoading(true);
     try {
       await enrollmentService.bulkCreate(formData);
-      navigate('/dashboard/enrollments');
-    } catch (error: any) {
-      console.error('Error creating bulk enrollments:', error);
-      if (error.response?.data?.message) {
-        alert(error.response.data.message);
-      } else {
-        alert('Failed to create enrollments. Please try again.');
+      setSuccessOpen(true);
+    } catch (err: unknown) {
+      let message = 'Failed to create enrollments. Please try again.';
+      const axiosErr = err as AxiosError<{ message?: string }>;
+
+      if (axiosErr.response?.data?.message) {
+        message = axiosErr.response.data.message;
       }
+
+      setErrorMessage(message);
+      setErrorOpen(true);
     } finally {
       setLoading(false);
     }
   };
 
+  // ----------------------------
+  // Student Selection Logic
+  // ----------------------------
   const handleStudentToggle = (studentId: number, checked: boolean) => {
     setFormData(prev => ({
       ...prev,
       student_ids: checked
         ? [...prev.student_ids, studentId]
-        : prev.student_ids.filter(id => id !== studentId)
+        : prev.student_ids.filter(id => id !== studentId),
     }));
   };
 
   const handleSelectAll = (checked: boolean) => {
     setFormData(prev => ({
       ...prev,
-      student_ids: checked ? students.map(s => s.id) : []
+      student_ids: checked ? students.map(s => s.id) : [],
     }));
   };
 
@@ -115,49 +142,80 @@ const BulkEnrollmentPage: React.FC = () => {
   const selectedStudents = students.filter(s => formData.student_ids.includes(s.id));
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button
-          variant="outline"
+    <div className="space-y-6 px-3 sm:px-4 md:px-6 lg:px-8">
+
+      {/* SUCCESS MODAL */}
+      <SuccessModal
+        open={successOpen}
+        title="Bulk Enrollment Successful"
+        description={`Successfully enrolled ${formData.student_ids.length} students.`}
+        okText="OK"
+        showButtons={true}
+        onConfirm={() => navigate('/dashboard/enrollments')}
+        onClose={() => navigate('/dashboard/enrollments')}
+      />
+
+      {/* ERROR MODAL */}
+      <ErrorModal
+        open={errorOpen}
+        title="Error"
+        description={errorMessage}
+        okText="Close"
+        showButtons={true}
+        onConfirm={() => setErrorOpen(false)}
+        onClose={() => setErrorOpen(false)}
+      />
+
+      {/* Header */}
+      <div className="flex flex-col gap-3">
+        <div
           onClick={() => navigate('/dashboard/enrollments')}
+          className="inline-flex items-center text-sm sm:text-base text-blue-600 hover:underline cursor-pointer"
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 mr-1" />
           Back to Enrollments
-        </Button>
+        </div>
+
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Bulk Enrollment</h1>
-          <p className="text-gray-600 mt-1">Enroll multiple students in a subject</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-600">Bulk Enrollment</h1>
+          <p className="text-gray-400 mt-1 text-sm sm:text-base">
+            Enroll multiple students in a subject
+          </p>
         </div>
       </div>
 
-      <Card className="max-w-4xl">
+      {/* Main Card */}
+      <Card className="w-full max-w-full md:max-w-4xl mx-auto shadow-sm">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
+          <CardTitle className="text-lg sm:text-xl text-gray-600">
             Bulk Enrollment Details
           </CardTitle>
         </CardHeader>
+
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Subject Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Subject *
-              </label>
+
+            {/* Subject Dropdown */}
+            <div className="w-full">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Subject *</label>
+
               <Select
                 value={formData.subject_id.toString()}
-                onValueChange={(value) => setFormData({ ...formData, subject_id: parseInt(value) })}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, subject_id: parseInt(value) })
+                }
               >
-                <SelectTrigger className={errors.subject_id !== undefined ? 'border-red-500' : ''}>
+                <SelectTrigger className={`h-11 ${errors.subject_id ? 'border-red-500' : ''}`}>
                   <SelectValue placeholder="Select a subject" />
                 </SelectTrigger>
-                <SelectContent>
-                  {subjects.map((subject) => (
-                    <SelectItem key={subject.id} value={subject.id.toString()}>
+
+                <SelectContent className="max-h-60 overflow-y-auto">
+                  {subjects.map(subject => (
+                    <SelectItem key={subject.id} value={subject.id.toString()} className="py-3">
                       <div className="flex flex-col">
                         <span className="font-medium">{subject.name}</span>
-                        <span className="text-sm text-gray-500">
-                          Class: {subject.class?.name || 'N/A'} • Board: {subject.board?.name || 'N/A'}
+                        <span className="text-xs text-gray-500">
+                          Class: {subject.class?.name ?? 'N/A'} • Board: {subject.board?.name ?? 'N/A'}
                           {subject.is_course && ' • Course'}
                         </span>
                       </div>
@@ -165,22 +223,22 @@ const BulkEnrollmentPage: React.FC = () => {
                   ))}
                 </SelectContent>
               </Select>
-              {errors.subject_id !== undefined && (
-                <p className="mt-1 text-sm text-red-600">Please select a subject</p>
+
+              {errors.subject_id && (
+                <p className="text-red-600 text-sm mt-1">Please select a subject</p>
               )}
             </div>
 
-            {/* Student Selection */}
+            {/* Students List */}
             <div>
-              <div className="flex items-center justify-between mb-4">
-                <label className="block text-sm font-medium text-gray-700">
-                  Students *
-                </label>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 gap-3">
+                <label className="block text-sm font-medium text-gray-700">Students *</label>
+
                 <div className="flex items-center gap-2">
                   <Checkbox
                     id="select-all"
                     checked={formData.student_ids.length === students.length && students.length > 0}
-                    onCheckedChange={handleSelectAll}
+                    onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
                   />
                   <label htmlFor="select-all" className="text-sm text-gray-700">
                     Select All ({students.length})
@@ -188,84 +246,100 @@ const BulkEnrollmentPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className={`border rounded-lg p-4 max-h-96 overflow-y-auto ${errors.student_ids !== undefined ? 'border-red-500' : ''}`}>
+              <div className={`border rounded-lg p-4 max-h-80 sm:max-h-96 overflow-y-auto bg-white
+                ${errors.student_ids ? 'border-red-500' : ''}`}>
+
                 {students.length === 0 ? (
-                  <p className="text-gray-500 text-center py-4">No students available</p>
+                  <p className="text-center text-gray-500">No students available</p>
                 ) : (
                   <div className="space-y-3">
-                    {students.map((student) => (
-                      <div key={student.id} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded">
+                    {students.map(student => (
+                      <div
+                        key={student.id}
+                        className="flex items-start sm:items-center gap-3 p-2 rounded hover:bg-gray-50"
+                      >
                         <Checkbox
-                          id={`student-${student.id}`}
                           checked={formData.student_ids.includes(student.id)}
-                          onCheckedChange={(checked) => handleStudentToggle(student.id, checked as boolean)}
+                          onCheckedChange={(checked) =>
+                            handleStudentToggle(student.id, checked as boolean)
+                          }
                         />
-                        <label htmlFor={`student-${student.id}`} className="flex-1 cursor-pointer">
-                          <div className="flex flex-col">
-                            <span className="font-medium">{student.user.name}</span>
-                            <span className="text-sm text-gray-500">
-                              {student.user.email} • Class: {student.class?.name || 'N/A'} • Board: {student.board?.name || 'N/A'}
-                            </span>
-                          </div>
-                        </label>
+
+                        <div>
+                          <p className="font-medium text-sm sm:text-base">{student.user.name}</p>
+                          <p className="text-xs text-gray-500">
+                            {student.user.email} • Class: {student.class?.name ?? 'N/A'} • Board: {student.board?.name ?? 'N/A'}
+                          </p>
+                        </div>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
-              {errors.student_ids !== undefined && (
-                <p className="mt-1 text-sm text-red-600">Please select at least one student</p>
+
+              {errors.student_ids && (
+                <p className="text-red-600 text-sm mt-1">
+                  Please select at least one student
+                </p>
               )}
             </div>
 
-            {/* Preview */}
+            {/* Preview Section */}
             {selectedSubject && selectedStudents.length > 0 && (
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-gray-900 mb-3">Enrollment Preview</h3>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm text-gray-600 mb-2">
-                      <strong>Subject:</strong> {selectedSubject.name} ({selectedSubject.class?.name || 'N/A'})
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedStudents.map((student) => (
-                        <Badge key={student.id} variant="secondary" className="text-xs">
-                          <Check className="h-3 w-3 mr-1" />
-                          {student.user.name}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    <strong>Total Enrollments:</strong> {selectedStudents.length} student{selectedStudents.length !== 1 ? 's' : ''}
-                  </p>
+              <div className="bg-gray-50 rounded-lg p-4 sm:p-5">
+                <h3 className="text-sm font-medium text-gray-900 mb-3">Preview</h3>
+
+                <p className="text-sm text-gray-700 mb-2">
+                  <strong>Subject:</strong> {selectedSubject.name}
+                </p>
+
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {selectedStudents.map(student => (
+                    <Badge
+                      key={student.id}
+                      variant="secondary"
+                      className="text-xs py-1 px-2 flex items-center"
+                    >
+                      <Check className="h-3 w-3 mr-1" />
+                      {student.user.name}
+                    </Badge>
+                  ))}
                 </div>
+
+                <p className="text-sm text-gray-700">
+                  <strong>Total:</strong> {selectedStudents.length} students
+                </p>
               </div>
             )}
 
-            <div className="flex justify-end gap-3">
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row justify-end gap-3">
               <Button
                 type="button"
                 variant="outline"
+                className="w-full sm:w-auto"
                 onClick={() => navigate('/dashboard/enrollments')}
                 disabled={loading}
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading}>
+
+              <Button type="submit" className="w-full sm:w-auto" disabled={loading}>
                 {loading ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Creating Enrollments...
+                    Creating...
                   </>
                 ) : (
                   <>
                     <Save className="h-4 w-4 mr-2" />
-                    Create {formData.student_ids.length} Enrollment{formData.student_ids.length !== 1 ? 's' : ''}
+                    Create {formData.student_ids.length} Enrollment
+                    {formData.student_ids.length !== 1 ? 's' : ''}
                   </>
                 )}
               </Button>
             </div>
+
           </form>
         </CardContent>
       </Card>

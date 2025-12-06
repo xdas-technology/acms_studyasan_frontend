@@ -1,10 +1,10 @@
 import React, { useEffect } from "react";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 
-interface SuccessModalProps {
+interface ErrorModalProps {
   open: boolean;
-  title?: string;        
-  description?: string;   
+  title?: string;
+  description?: string;
   showButtons?: boolean;
   cancelText?: string;
   okText?: string;
@@ -14,7 +14,7 @@ interface SuccessModalProps {
   onClose?: () => void;
 }
 
-const SuccessModal: React.FC<SuccessModalProps> = ({
+const ErrorModal: React.FC<ErrorModalProps> = ({
   open,
   title,
   description,
@@ -43,20 +43,21 @@ const SuccessModal: React.FC<SuccessModalProps> = ({
         {/* Animation */}
         <div className="w-40 mx-auto">
           <DotLottieReact
-            src="/lottie/Success.json"
+            src="/lottie/Error.json"
             autoplay
             loop={false}
+           
           />
         </div>
 
-        {/* Title (from page) */}
+        {/* Title */}
         {title && (
-          <h2 className="text-xl font-semibold mt-4">
+          <h2 className="text-xl font-semibold mt-4 text-red-600">
             {title}
           </h2>
         )}
 
-        {/* Description (from page) */}
+        {/* Description */}
         {description && (
           <p className="text-gray-600 text-sm mt-2">
             {description}
@@ -67,7 +68,6 @@ const SuccessModal: React.FC<SuccessModalProps> = ({
         {showButtons && (
           <div className="mt-6 flex justify-center gap-3">
 
-            {/* Only render cancel button if provided */}
             {cancelText && (
               <button
                 onClick={onCancel}
@@ -80,7 +80,7 @@ const SuccessModal: React.FC<SuccessModalProps> = ({
 
             <button
               onClick={onConfirm}
-              className="px-6 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700"
+              className="px-6 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
             >
               {okText}
             </button>
@@ -92,4 +92,4 @@ const SuccessModal: React.FC<SuccessModalProps> = ({
   );
 };
 
-export default SuccessModal;
+export default ErrorModal;
