@@ -61,7 +61,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
 
           {/* Warning Text at Bottom */}
           <p className="mt-3 text-red-600 text-xs sm:text-sm font-medium">
-            *THIS ACTION CANNOT BE UNDONE
+            *This action cannot be undone.
           </p>
         </div>
 

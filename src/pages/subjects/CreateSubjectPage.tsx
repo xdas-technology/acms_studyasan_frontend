@@ -113,6 +113,7 @@ export default function CreateSubjectPage() {
           onClick={() => navigate('/dashboard/subjects')}
         >
           <ArrowLeft className="h-5 w-5" />
+          <p>Back to subjects</p>
         </Button>
         <div>
           <h1 className="text-3xl font-bold">Add New Subject</h1>

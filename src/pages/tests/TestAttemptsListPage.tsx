@@ -44,73 +44,88 @@ export default function TestAttemptsListPage() {
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <Button variant="ghost" onClick={() => navigate(`/tests/${testId}`)} className="mb-4">
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Back to Test
-      </Button>
+    <div className="space-y-6">
+{/* Header */}
+<div className="flex flex-col gap-3">
+  <div
+    onClick={() => navigate(`/tests/${testId}`)}
+    className="inline-flex items-center text-sm sm:text-base text-blue-600 hover:underline cursor-pointer"
+  >
+    <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 mr-1" />
+    Back to Test
+  </div>
 
-      <h1 className="text-3xl font-bold mb-2">Test Attempts</h1>
-      <p className="text-gray-600 mb-6">{test?.title}</p>
+  <div>
+    <h1 className="text-2xl sm:text-3xl font-bold text-gray-600">Test Attempts</h1>
+    <p className="text-gray-400 mt-1 text-sm sm:text-base">
+      View all student attempts for this test
+    </p>
+  </div>
+</div>
+
+<p className="text-gray-600 text-sm sm:text-base md:text-lg mb-6 font-semibold">{test?.title}</p>
+
 
       {loading ? (
-        <div className="text-center py-12">Loading attempts...</div>
+        <div className="text-center py-12 text-gray-600">Loading attempts...</div>
       ) : attempts.length === 0 ? (
         <Card>
-          <CardContent className="text-center py-12">
-            <p className="text-gray-600">No attempts yet</p>
+          <CardContent className="text-center py-12 text-gray-600">
+            No attempts yet
           </CardContent>
         </Card>
       ) : (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="space-y-4">
-              {attempts.map((attempt) => (
-                <div
-                  key={attempt.id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-center gap-4 flex-1">
-                    <User className="w-10 h-10 text-gray-400" />
+        <div className="space-y-4">
+          {attempts.map((attempt) => (
+            <Card
+              key={attempt.id}
+              className="p-4 sm:p-6 hover:shadow-md transition-shadow"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6">
+                {/* Student Info */}
+                <div className="flex items-start sm:items-center gap-4 flex-1">
+                  <User className="w-10 h-10 text-gray-400 flex-shrink-0" />
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 w-full justify-between">
                     <div>
-                      <p className="font-semibold">{attempt.student?.user.name}</p>
-                      <p className="text-sm text-gray-600">{attempt.student?.user.email}</p>
-                      <p className="text-sm text-gray-500">
+                      <p className="font-semibold text-sm sm:text-base">{attempt.student?.user.name}</p>
+                      <p className="text-gray-600 text-xs sm:text-sm">{attempt.student?.user.email}</p>
+                      <p className="text-gray-500 text-xs sm:text-sm">
                         Submitted: {attempt.submitted_at ? new Date(attempt.submitted_at).toLocaleString() : 'In Progress'}
                       </p>
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-4">
-                    {attempt.is_graded ? (
-                      <div className="text-right">
-                        <Badge variant={attempt.is_passed ? 'default' : 'destructive'}>
-                          {attempt.score} / {attempt.total_marks}
-                        </Badge>
-                        <p className="text-sm text-gray-600 mt-1">
-                          {attempt.is_passed ? 'Passed' : 'Failed'}
-                        </p>
-                      </div>
-                    ) : attempt.submitted_at ? (
-                      <Badge variant="outline">Pending Grading</Badge>
-                    ) : (
-                      <Badge variant="outline">In Progress</Badge>
-                    )}
-
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => navigate(`/test-attempts/${attempt.id}/grade`)}
-                      disabled={!attempt.submitted_at}
-                    >
-                      {attempt.is_graded ? 'View' : 'Grade'}
-                    </Button>
-                  </div>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+
+                {/* Attempt Info and Actions */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2 sm:mt-0">
+                  {attempt.is_graded ? (
+                    <div className="text-right">
+                      <Badge variant={attempt.is_passed ? 'default' : 'destructive'}>
+                        {attempt.score} / {attempt.total_marks}
+                      </Badge>
+                      <p className="text-gray-600 text-xs sm:text-sm mt-1">
+                        {attempt.is_passed ? 'Passed' : 'Failed'}
+                      </p>
+                    </div>
+                  ) : attempt.submitted_at ? (
+                    <Badge variant="outline">Pending Grading</Badge>
+                  ) : (
+                    <Badge variant="outline">In Progress</Badge>
+                  )}
+
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => navigate(`/test-attempts/${attempt.id}/grade`)}
+                    disabled={!attempt.submitted_at}
+                  >
+                    {attempt.is_graded ? 'View' : 'Grade'}
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
       )}
     </div>
   );

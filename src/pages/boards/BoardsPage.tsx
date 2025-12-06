@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
-import { Plus, Trash2, BookOpen, Search } from 'lucide-react';
-import { boardService } from '@/services/api';
-import type { Board } from '@/types';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuthStore } from '@/store/authStore';
+import React, { useState, useEffect, useCallback } from "react";
+import { Link } from "react-router-dom";
+import { Plus, Trash2, BookOpen, Search } from "lucide-react";
+import { boardService } from "@/services/api";
+import type { Board } from "@/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuthStore } from "@/store/authStore";
+import DeleteConfirmationModal from "@/components/ui/deleteConfirmationModal";
 
 interface FetchParams {
   page: number;
@@ -18,11 +19,14 @@ const BoardsPage: React.FC = () => {
   const { user } = useAuthStore();
   const [boards, setBoards] = useState<Board[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  const isAdmin = user?.role === 'ADMIN';
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedBoard, setSelectedBoard] = useState<Board | null>(null);
+
+  const isAdmin = user?.role === "ADMIN";
 
   const fetchBoards = useCallback(async () => {
     try {
@@ -36,7 +40,7 @@ const BoardsPage: React.FC = () => {
       setBoards(response.data.data);
       setTotalPages(response.data.pagination.totalPages);
     } catch (error) {
-      console.error('Error fetching boards:', error);
+      console.error("Error fetching boards:", error);
     } finally {
       setLoading(false);
     }
@@ -46,25 +50,30 @@ const BoardsPage: React.FC = () => {
     fetchBoards();
   }, [fetchBoards]);
 
-  const handleDelete = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this board?')) return;
+  const handleDeleteClick = (board: Board) => {
+    setSelectedBoard(board);
+    setDeleteModalOpen(true);
+  };
 
+  const confirmDelete = async () => {
+    if (!selectedBoard) return;
     try {
-      await boardService.delete(id);
-      setBoards(boards.filter(b => b.id !== id));
+      await boardService.delete(selectedBoard.id);
+      setBoards(boards.filter((b) => b.id !== selectedBoard.id));
+      setDeleteModalOpen(false);
+      setSelectedBoard(null);
     } catch (error) {
-      console.error('Error deleting board:', error);
-      alert('Failed to delete board. It may be in use.');
+      console.error("Error deleting board:", error);
+      alert("Failed to delete board. It may be in use.");
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
-  };
 
   if (loading && boards.length === 0) {
     return (
@@ -104,7 +113,7 @@ const BoardsPage: React.FC = () => {
           </CardTitle>
         </CardHeader>
 
-        {/* Search inside Boards Card */}
+        {/* Search */}
         <CardContent className="pb-0">
           <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -152,7 +161,7 @@ const BoardsPage: React.FC = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleDelete(board.id)}
+                      onClick={() => handleDeleteClick(board)}
                       className="mt-4 text-red-600 hover:text-red-700 w-full"
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
@@ -188,6 +197,40 @@ const BoardsPage: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        open={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onCancel={() => setDeleteModalOpen(false)}
+        title={
+          selectedBoard ? `Delete Board "${selectedBoard.name}"?` : "Delete Board"
+        }
+        message={
+          selectedBoard && (
+            <div className="text-left text-gray-700 text-sm">
+              Are you sure you want to delete the board <strong>{selectedBoard.name}</strong>?
+            </div>
+          )
+        }
+        footer={
+          <div className="flex justify-end gap-3 mt-4">
+            <button
+              onClick={() => setDeleteModalOpen(false)}
+              className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmDelete}
+              className="px-6 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 flex items-center gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete
+            </button>
+          </div>
+        }
+      />
     </div>
   );
 };

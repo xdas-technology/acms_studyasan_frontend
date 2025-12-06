@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuthStore } from '@/store/authStore';
+import DeleteConfirmationModal from '@/components/ui/deleteConfirmationModal';
 
 interface FetchParams {
   page: number;
@@ -21,6 +22,9 @@ const ClassesPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedClass, setSelectedClass] = useState<Class | null>(null);
 
   const isAdmin = user?.role === 'ADMIN';
 
@@ -46,12 +50,18 @@ const ClassesPage: React.FC = () => {
     fetchClasses();
   }, [fetchClasses]);
 
-  const handleDelete = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this class?')) return;
+  const handleDeleteClick = (classItem: Class) => {
+    setSelectedClass(classItem);
+    setDeleteModalOpen(true);
+  };
 
+  const confirmDelete = async () => {
+    if (!selectedClass) return;
     try {
-      await classService.delete(id);
-      setClasses(classes.filter(c => c.id !== id));
+      await classService.delete(selectedClass.id);
+      setClasses(classes.filter((c) => c.id !== selectedClass.id));
+      setDeleteModalOpen(false);
+      setSelectedClass(null);
     } catch (error) {
       console.error('Error deleting class:', error);
       alert('Failed to delete class. It may be in use.');
@@ -152,7 +162,7 @@ const ClassesPage: React.FC = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleDelete(classItem.id)}
+                      onClick={() => handleDeleteClick(classItem)}
                       className="mt-4 text-red-600 hover:text-red-700 w-full"
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
@@ -190,6 +200,38 @@ const ClassesPage: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        open={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onCancel={() => setDeleteModalOpen(false)}
+        title={selectedClass ? `Delete Class "${selectedClass.name}"?` : "Delete Class"}
+        message={
+          selectedClass && (
+            <div className="text-left text-gray-700 text-sm">
+              Are you sure you want to delete the class <strong>{selectedClass.name}</strong>?
+            </div>
+          )
+        }
+        footer={
+          <div className="flex justify-end gap-3 mt-4">
+            <button
+              onClick={() => setDeleteModalOpen(false)}
+              className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmDelete}
+              className="px-6 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 flex items-center gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete
+            </button>
+          </div>
+        }
+      />
     </div>
   );
 };

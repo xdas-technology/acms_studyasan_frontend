@@ -7,68 +7,93 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import SuccessModal from '@/components/ui/successModal';
+import ErrorModal from '@/components/ui/errorModal';
+import type { AxiosError } from 'axios';
 
 const CreateClassPage: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState<CreateClassData>({
-    name: '',
-  });
+  const [formData, setFormData] = useState<CreateClassData>({ name: '' });
   const [errors, setErrors] = useState<Partial<CreateClassData>>({});
+
+  // Modals
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [errorOpen, setErrorOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const validateForm = (): boolean => {
     const newErrors: Partial<CreateClassData> = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = 'Class name is required';
-    }
-
+    if (!formData.name.trim()) newErrors.name = 'Class name is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setLoading(true);
     try {
       await classService.create(formData);
-      navigate('/dashboard/classes');
-    } catch (error: any) {
-      console.error('Error creating class:', error);
-      if (error.response?.data?.message) {
-        alert(error.response.data.message);
-      } else {
-        alert('Failed to create class. Please try again.');
-      }
+      setSuccessOpen(true);
+    } catch (err: unknown) {
+      let message = 'Failed to create class. Please try again.';
+      const axiosErr = err as AxiosError<{ message?: string }>;
+      if (axiosErr.response?.data?.message) message = axiosErr.response.data.message;
+      setErrorMessage(message);
+      setErrorOpen(true);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button
-          variant="outline"
+    <div className="space-y-6 relative">
+      {/* SUCCESS MODAL */}
+      <SuccessModal
+        open={successOpen}
+        title="Class Created"
+        description={`Class "${formData.name}" has been created successfully.`}
+        showButtons
+        cancelText=""
+        okText="OK"
+        onConfirm={() => navigate('/dashboard/classes')}
+        onClose={() => navigate('/dashboard/classes')}
+      />
+
+      {/* ERROR MODAL */}
+      <ErrorModal
+        open={errorOpen}
+        title="Error"
+        description={errorMessage}
+        showButtons
+        cancelText=""
+        okText="Close"
+        onConfirm={() => setErrorOpen(false)}
+        onClose={() => setErrorOpen(false)}
+      />
+
+      {/* Header */}
+      <div className="flex flex-col items-start gap-2">
+        <div
           onClick={() => navigate('/dashboard/classes')}
+          className="inline-flex items-center text-sm sm:text-base text-blue-600 hover:underline cursor-pointer"
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          <ArrowLeft className="h-4 w-4 mr-2 sm:h-5 sm:w-5" />
           Back to Classes
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Create Class</h1>
-          <p className="text-gray-600 mt-1">Add a new class level</p>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-600">Create Class</h1>
+          <p className="text-gray-400 text-sm sm:text-base">Add a new class level</p>
         </div>
       </div>
 
-      <Card className="max-w-2xl">
+      {/* Card */}
+      <Card className="w-full max-w-full sm:max-w-2xl mx-auto shadow-sm">
         <CardHeader>
-          <CardTitle>Class Details</CardTitle>
+          <CardTitle className="text-lg sm:text-xl text-gray-600">Class Details</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -79,23 +104,23 @@ const CreateClassPage: React.FC = () => {
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="e.g., Class 10, Class 12, Grade 5"
-                className={errors.name ? 'border-red-500' : ''}
+                className={`${errors.name ? 'border-red-500' : ''} w-full`}
               />
-              {errors.name && (
-                <p className="mt-1 text-sm text-red-600">{errors.name}</p>
-              )}
+              {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
             </div>
 
-            <div className="flex justify-end gap-3">
+            {/* Buttons */}
+            <div className="flex flex-col sm:flex-row justify-end gap-3">
               <Button
                 type="button"
                 variant="outline"
+                className="w-full sm:w-auto"
                 onClick={() => navigate('/dashboard/classes')}
                 disabled={loading}
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading}>
+              <Button type="submit" className="w-full sm:w-auto" disabled={loading}>
                 {loading ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
