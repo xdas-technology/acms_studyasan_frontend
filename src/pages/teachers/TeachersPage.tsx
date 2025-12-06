@@ -36,7 +36,7 @@ import {
   ChevronRight,
   UserCheck,
 } from "lucide-react";
-import DeleteTeacherDialog from "@/components/teachers/DeleteTeacherDialog";
+import DeleteConfirmationModal from "@/components/ui/deleteConfirmationModal";
 
 export default function TeachersPage() {
   const navigate = useNavigate();
@@ -147,6 +147,7 @@ export default function TeachersPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Filters */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-4 mb-4 items-end">
             <div className="md:col-span-5">
               <Input
@@ -186,6 +187,7 @@ export default function TeachersPage() {
               </Button>
             </div>
           </div>
+
           {isLoading ? (
             <div className="flex items-center justify-center h-64">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -412,11 +414,20 @@ export default function TeachersPage() {
         </CardContent>
       </Card>
 
-      {/* Delete Dialog */}
-      <DeleteTeacherDialog
-        teacher={deleteTeacher}
-        onClose={() => setDeleteTeacher(null)}
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        open={!!deleteTeacher}
+        title="Delete Teacher"
+        message={
+          <span>
+            Are you sure you want to delete{" "}
+            <strong>{deleteTeacher?.user.name}</strong>?
+          </span>
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
         onConfirm={handleDelete}
+        onCancel={() => setDeleteTeacher(null)}
       />
     </div>
   );

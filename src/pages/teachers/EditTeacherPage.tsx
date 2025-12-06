@@ -11,23 +11,30 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+
 import { teacherService } from '@/services/api';
 import type { Teacher, UpdateTeacherData } from '@/types';
+
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
+
+import SuccessModal from '@/components/ui/successModal';
+import ErrorModal from '@/components/ui/errorModal';
 
 export default function EditTeacherPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+
   const [teacher, setTeacher] = useState<Teacher | null>(null);
-  const [error, setError] = useState('');
-  const [formData, setFormData] = useState<{
-    salary: number | null;
-    qualification: string | null;
-    gender: 'M' | 'F' | 'OTHER' | null;
-    experience: string | null;
-  }>({
+
+  const [errorOpen, setErrorOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const [successOpen, setSuccessOpen] = useState(false);
+
+  const [formData, setFormData] = useState<UpdateTeacherData>({
     salary: null,
     qualification: null,
     gender: null,
@@ -35,9 +42,7 @@ export default function EditTeacherPage() {
   });
 
   useEffect(() => {
-    if (id) {
-      fetchTeacher(parseInt(id));
-    }
+    if (id) fetchTeacher(parseInt(id));
   }, [id]);
 
   const fetchTeacher = async (teacherId: number) => {
@@ -45,15 +50,16 @@ export default function EditTeacherPage() {
     try {
       const response = await teacherService.getById(teacherId);
       setTeacher(response.data);
+
       setFormData({
         salary: response.data.salary,
         qualification: response.data.qualification,
         gender: response.data.gender,
         experience: response.data.experience,
       });
-    } catch (error) {
-      console.error('Failed to fetch teacher:', error);
-      setError('Failed to load teacher data');
+    } catch (err) {
+      setErrorMessage("Failed to load teacher data.");
+      setErrorOpen(true);
     } finally {
       setIsLoading(false);
     }
@@ -63,14 +69,15 @@ export default function EditTeacherPage() {
     e.preventDefault();
     if (!id) return;
 
-    setError('');
     setIsSaving(true);
 
     try {
       await teacherService.update(parseInt(id), formData);
-      navigate('/dashboard/teachers');
+      setSuccessOpen(true);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to update teacher');
+      const msg = err.response?.data?.message || "Failed to update teacher.";
+      setErrorMessage(msg);
+      setErrorOpen(true);
     } finally {
       setIsSaving(false);
     }
@@ -79,7 +86,7 @@ export default function EditTeacherPage() {
   const handleChange = (field: keyof UpdateTeacherData, value: any) => {
     setFormData((prev) => ({
       ...prev,
-      [field]: value === 'none-gender' ? null : value === '' ? null : value,
+      [field]: value === '' || value === 'none-gender' ? null : value,
     }));
   };
 
@@ -104,65 +111,93 @@ export default function EditTeacherPage() {
 
   return (
     <div className="space-y-6">
+
+      {/* SUCCESS MODAL */}
+      <SuccessModal
+        open={successOpen}
+        title="Teacher Updated Successfully"
+        description={`Details for ${teacher.user.name} have been updated.`}
+        showButtons={true}
+        okText="OK"
+        cancelText="Go Back"
+        onConfirm={() => setSuccessOpen(false)}
+        onCancel={() => navigate('/dashboard/teachers')}
+        onClose={() => setSuccessOpen(false)}
+      />
+
+      {/* ERROR MODAL */}
+      <ErrorModal
+        open={errorOpen}
+        title="Error"
+        description={errorMessage}
+        okText="Close"
+        showButtons={true}
+        onConfirm={() => setErrorOpen(false)}
+        onClose={() => setErrorOpen(false)}
+      />
+
       {/* Header */}
-      <div className="flex items-center space-x-4">
-        <Button
-          variant="ghost"
-          size="icon"
+      <div className="flex flex-col space-y-2">
+        <button
           onClick={() => navigate('/dashboard/teachers')}
+          className="flex items-center text-blue-600 text-sm hover:underline w-fit"
         >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          Back to Teachers
+        </button>
+
         <div>
-          <h1 className="text-3xl font-bold">Edit Teacher</h1>
-          <p className="text-muted-foreground mt-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-600">Edit Teacher</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
             Update teacher information for {teacher.user.name}
           </p>
         </div>
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid gap-6 md:grid-cols-2">
-          {/* User Information Card (Read-only) */}
-          <Card>
+
+          {/* User Info Card (Read-only) */}
+          <Card className="w-full">
             <CardHeader>
-              <CardTitle>User Information</CardTitle>
-              <CardDescription>Account information (read-only)</CardDescription>
+              <CardTitle className="text-xl text-gray-600">User Information</CardTitle>
+              <CardDescription>Basic account information (read-only)</CardDescription>
             </CardHeader>
+
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Full Name</Label>
+                <Label className='text-gray-600'>Full Name</Label>
                 <Input value={teacher.user.name} disabled />
               </div>
+
               <div className="space-y-2">
-                <Label>Email</Label>
+                <Label className='text-gray-600'>Email</Label>
                 <Input value={teacher.user.email} disabled />
               </div>
+
               <div className="space-y-2">
-                <Label>Phone</Label>
+                <Label className='text-gray-600'>Phone</Label>
                 <Input value={teacher.user.phone} disabled />
               </div>
+
               <p className="text-xs text-muted-foreground">
-                User account details cannot be edited here
+                User account details cannot be edited here.
               </p>
             </CardContent>
           </Card>
 
-          {/* Teacher Details Card */}
-          <Card>
+          {/* Editable Teacher Details */}
+          <Card className="w-full">
             <CardHeader>
-              <CardTitle>Teacher Details</CardTitle>
+              <CardTitle className="text-xl text-gray-600">Teacher Details</CardTitle>
               <CardDescription>Update professional information</CardDescription>
             </CardHeader>
+
             <CardContent className="space-y-4">
-              {error && (
-                <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-md">
-                  {error}
-                </div>
-              )}
+
               <div className="space-y-2">
-                <Label htmlFor="qualification">Qualification</Label>
+                <Label htmlFor="qualification" className="text-gray-600">Qualification</Label>
                 <Input
                   id="qualification"
                   placeholder="M.Sc. Mathematics, B.Ed."
@@ -171,8 +206,9 @@ export default function EditTeacherPage() {
                   disabled={isSaving}
                 />
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="experience">Experience</Label>
+                <Label htmlFor="experience" className="text-gray-600">Experience</Label>
                 <Input
                   id="experience"
                   placeholder="5 years"
@@ -181,8 +217,9 @@ export default function EditTeacherPage() {
                   disabled={isSaving}
                 />
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="gender">Gender</Label>
+                <Label htmlFor="gender" className="text-gray-600">Gender</Label>
                 <Select
                   value={formData.gender || 'none-gender'}
                   onValueChange={(value) => handleChange('gender', value)}
@@ -199,8 +236,9 @@ export default function EditTeacherPage() {
                   </SelectContent>
                 </Select>
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="salary">Salary (Monthly)</Label>
+                <Label htmlFor="salary" className="text-gray-600">Salary (Monthly)</Label>
                 <Input
                   id="salary"
                   type="number"
@@ -209,25 +247,26 @@ export default function EditTeacherPage() {
                   onChange={(e) => handleChange('salary', parseFloat(e.target.value))}
                   disabled={isSaving}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Enter amount in USD
-                </p>
+                <p className="text-xs text-muted-foreground">Enter amount in USD</p>
               </div>
+
             </CardContent>
           </Card>
         </div>
 
-        {/* Actions */}
-        <div className="flex justify-end space-x-4 mt-6">
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row sm:justify-end gap-3 mt-6">
           <Button
             type="button"
             variant="outline"
             onClick={() => navigate('/dashboard/teachers')}
             disabled={isSaving}
+            className="w-full sm:w-auto"
           >
             Cancel
           </Button>
-          <Button type="submit" disabled={isSaving}>
+
+          <Button type="submit" disabled={isSaving} className="w-full sm:w-auto">
             {isSaving ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -241,6 +280,7 @@ export default function EditTeacherPage() {
             )}
           </Button>
         </div>
+
       </form>
     </div>
   );

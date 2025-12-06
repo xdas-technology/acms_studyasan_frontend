@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useState, useEffect} from 'react';
+import type { ChangeEvent } from 'react';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,25 +12,36 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+
 import { subjectService, boardService, classService } from '@/services/api';
 import type { Board, Class, Subject, UpdateSubjectData } from '@/types';
 import { useAuthStore } from '@/store/authStore';
+
 import { ArrowLeft, Loader2, Save, Plus, Trash2 } from 'lucide-react';
+
+import ErrorModal from '@/components/ui/errorModal';
+import SuccessModal from '@/components/ui/successModal';
 
 export default function EditSubjectPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const user = useAuthStore((state) => state.user);
   const isAdmin = user?.role === 'ADMIN';
+
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+
   const [boards, setBoards] = useState<Board[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [subject, setSubject] = useState<Subject | null>(null);
+
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
   const [syllabusUnits, setSyllabusUnits] = useState<{ name: string; content: string }[]>([]);
   const [newUnitName, setNewUnitName] = useState('');
   const [newUnitContent, setNewUnitContent] = useState('');
+
   const [formData, setFormData] = useState<UpdateSubjectData>({
     name: '',
     cover_image: null,
@@ -46,31 +58,31 @@ export default function EditSubjectPage() {
     }
     fetchBoards();
     fetchClasses();
-    if (id) {
-      fetchSubject(parseInt(id));
-    }
+    if (id) fetchSubject(Number(id));
   }, [id, isAdmin, navigate]);
 
   const fetchSubject = async (subjectId: number) => {
     setIsLoading(true);
+
     try {
       const response = await subjectService.getById(subjectId);
-      setSubject(response.data);
+      const data: Subject = response.data;
+
+      setSubject(data);
+
       setFormData({
-        name: response.data.name,
-        cover_image: response.data.cover_image,
-        class_id: response.data.class_id,
-        board_id: response.data.board_id,
-        syllabus: response.data.syllabus,
-        is_course: response.data.is_course,
+        name: data.name,
+        cover_image: data.cover_image ?? null,
+        class_id: data.class_id ?? null,
+        board_id: data.board_id ?? null,
+        syllabus: data.syllabus ?? null,
+        is_course: data.is_course ?? false,
       });
-      
-      // Populate syllabus units from existing data
-      if (response.data.syllabus?.units) {
-        setSyllabusUnits(response.data.syllabus.units);
+
+      if (data.syllabus?.units) {
+        setSyllabusUnits(data.syllabus.units);
       }
-    } catch (error) {
-      console.error('Failed to fetch subject:', error);
+    } catch {
       setError('Failed to load subject data');
     } finally {
       setIsLoading(false);
@@ -79,32 +91,31 @@ export default function EditSubjectPage() {
 
   const fetchBoards = async () => {
     try {
-      const response = await boardService.getAll({ limit: 100 });
-      setBoards(response.data.data);
-    } catch (error) {
-      console.error('Failed to fetch boards:', error);
-    }
+      const res = await boardService.getAll({ limit: 100 });
+      setBoards(res.data.data);
+    } catch {}
   };
 
   const fetchClasses = async () => {
     try {
-      const response = await classService.getAll({ limit: 100 });
-      setClasses(response.data.data);
-    } catch (error) {
-      console.error('Failed to fetch classes:', error);
-    }
+      const res = await classService.getAll({ limit: 100 });
+      setClasses(res.data.data);
+    } catch {}
   };
 
   const addUnit = () => {
     if (newUnitName.trim() && newUnitContent.trim()) {
-      setSyllabusUnits([...syllabusUnits, { name: newUnitName.trim(), content: newUnitContent.trim() }]);
+      setSyllabusUnits((prev) => [
+        ...prev,
+        { name: newUnitName.trim(), content: newUnitContent.trim() },
+      ]);
       setNewUnitName('');
       setNewUnitContent('');
     }
   };
 
   const removeUnit = (index: number) => {
-    setSyllabusUnits(syllabusUnits.filter((_, i) => i !== index));
+    setSyllabusUnits((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -112,17 +123,19 @@ export default function EditSubjectPage() {
     if (!id) return;
 
     setError('');
+    setSuccess('');
     setIsSaving(true);
 
     try {
-      // Prepare syllabus data
-      const syllabusData = syllabusUnits.length > 0 ? { units: syllabusUnits } : null;
+      const syllabusData =
+        syllabusUnits.length > 0 ? { units: syllabusUnits } : null;
 
-      await subjectService.update(parseInt(id), {
+      await subjectService.update(Number(id), {
         ...formData,
         syllabus: syllabusData,
       });
-      navigate('/dashboard/subjects');
+
+      setSuccess('Subject updated successfully!');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to update subject');
     } finally {
@@ -159,67 +172,73 @@ export default function EditSubjectPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center space-x-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate('/dashboard/subjects')}
+      <div className="flex flex-col space-y-2">
+        <Link
+          to="/dashboard/subjects"
+          className="flex items-center text-blue-600 text-sm hover:underline w-fit"
         >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          Back to Subjects
+        </Link>
+
         <div>
-          <h1 className="text-3xl font-bold">Edit Subject</h1>
-          <p className="text-muted-foreground mt-2">
-            Update subject information for {subject.name}
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-600">Edit Subject</h1>
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">
+            Update information for {subject.name}
           </p>
         </div>
       </div>
 
-      {/* Form */}
+      {/* FORM */}
       <form onSubmit={handleSubmit}>
         <div className="grid gap-6 md:grid-cols-2">
-          {/* Basic Information Card */}
+          {/* Basic Info */}
           <Card>
             <CardHeader>
-              <CardTitle>Basic Information</CardTitle>
+              <CardTitle className="text-xl text-gray-600">Basic Information</CardTitle>
               <CardDescription>Subject details</CardDescription>
             </CardHeader>
+
             <CardContent className="space-y-4">
-              {error && (
-                <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-md">
-                  {error}
-                </div>
-              )}
+              {/* Name */}
               <div className="space-y-2">
-                <Label htmlFor="name">Subject Name *</Label>
+                <Label htmlFor="name" className="text-gray-600">
+                  Subject Name *
+                </Label>
                 <Input
                   id="name"
-                  placeholder="Mathematics"
                   value={formData.name}
-                  onChange={(e) => handleChange('name', e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    handleChange('name', e.target.value)
+                  }
                   required
                   disabled={isSaving}
                 />
               </div>
+
+              {/* Cover Image */}
               <div className="space-y-2">
-                <Label htmlFor="cover_image">Cover Image URL</Label>
+                <Label htmlFor="cover_image" className="text-gray-600">
+                  Cover Image URL
+                </Label>
                 <Input
                   id="cover_image"
                   type="url"
-                  placeholder="https://example.com/image.jpg"
                   value={formData.cover_image ?? ''}
-                  onChange={(e) => handleChange('cover_image', e.target.value)}
+                  onChange={(e) => handleChange('cover_image', e.target.value || null)}
                   disabled={isSaving}
                 />
               </div>
+
+              {/* Type */}
               <div className="space-y-2">
-                <Label htmlFor="is_course">Type</Label>
+                <Label className="text-gray-600">Type</Label>
                 <Select
                   value={formData.is_course ? 'course' : 'subject'}
                   onValueChange={(value) => handleChange('is_course', value === 'course')}
                   disabled={isSaving}
                 >
-                  <SelectTrigger id="is_course">
+                  <SelectTrigger>
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -227,26 +246,33 @@ export default function EditSubjectPage() {
                     <SelectItem value="course">Course</SelectItem>
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground">
+                  Courses are standalone; subjects require class & board.
+                </p>
               </div>
             </CardContent>
           </Card>
 
-          {/* Classification Card */}
+          {/* Classification */}
           <Card>
             <CardHeader>
-              <CardTitle>Classification</CardTitle>
+              <CardTitle className="text-xl text-gray-600">Classification</CardTitle>
               <CardDescription>Class and board assignment</CardDescription>
             </CardHeader>
+
             <CardContent className="space-y-4">
+              {/* Class */}
               <div className="space-y-2">
-                <Label htmlFor="class">Class</Label>
+                <Label className="text-gray-600">Class</Label>
                 <Select
-                  value={formData.class_id?.toString() || 'none'}
-                  onValueChange={(value) => handleChange('class_id', value === 'none' ? null : parseInt(value))}
+                  value={formData.class_id?.toString() ?? 'none'}
+                  onValueChange={(v) =>
+                    handleChange('class_id', v === 'none' ? null : Number(v))
+                  }
                   disabled={isSaving || formData.is_course}
                 >
-                  <SelectTrigger id="class">
-                    <SelectValue placeholder="Select a class" />
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select class" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">None</SelectItem>
@@ -257,16 +283,26 @@ export default function EditSubjectPage() {
                     ))}
                   </SelectContent>
                 </Select>
+
+                {formData.is_course && (
+                  <p className="text-xs text-muted-foreground">
+                    Class not required for courses
+                  </p>
+                )}
               </div>
+
+              {/* Board */}
               <div className="space-y-2">
-                <Label htmlFor="board">Board</Label>
+                <Label className="text-gray-600">Board</Label>
                 <Select
-                  value={formData.board_id?.toString() || 'none'}
-                  onValueChange={(value) => handleChange('board_id', value === 'none' ? null : parseInt(value))}
+                  value={formData.board_id?.toString() ?? 'none'}
+                  onValueChange={(v) =>
+                    handleChange('board_id', v === 'none' ? null : Number(v))
+                  }
                   disabled={isSaving || formData.is_course}
                 >
-                  <SelectTrigger id="board">
-                    <SelectValue placeholder="Select a board" />
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select board" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">None</SelectItem>
@@ -277,79 +313,76 @@ export default function EditSubjectPage() {
                     ))}
                   </SelectContent>
                 </Select>
+
+                {formData.is_course && (
+                  <p className="text-xs text-muted-foreground">
+                    Board not required for courses
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Syllabus Card - Full Width */}
+        {/* Syllabus */}
         <Card className="mt-6">
           <CardHeader>
-            <CardTitle>Syllabus</CardTitle>
-            <CardDescription>
-              Add syllabus units for this subject (optional)
-            </CardDescription>
+            <CardTitle className="text-xl text-gray-600">Syllabus</CardTitle>
+            <CardDescription>Add or modify syllabus units</CardDescription>
           </CardHeader>
+
           <CardContent className="space-y-4">
-            {/* Add New Unit */}
-            <div className="space-y-3">
-              <div className="grid gap-2 md:grid-cols-2">
-                <Input
-                  placeholder="Unit name (e.g., Algebra Basics)"
-                  value={newUnitName}
-                  onChange={(e) => setNewUnitName(e.target.value)}
-                  disabled={isSaving}
-                />
-                <Input
-                  placeholder="Unit description/content"
-                  value={newUnitContent}
-                  onChange={(e) => setNewUnitContent(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && addUnit()}
-                  disabled={isSaving}
-                />
-              </div>
-              <Button
-                type="button"
-                onClick={addUnit}
-                disabled={!newUnitName.trim() || !newUnitContent.trim() || isSaving}
-                variant="outline"
-                className="w-full"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Unit
-              </Button>
+            <div className="grid gap-2 md:grid-cols-2">
+              <Input
+                placeholder="Unit name"
+                value={newUnitName}
+                onChange={(e) => setNewUnitName(e.target.value)}
+                disabled={isSaving}
+              />
+              <Input
+                placeholder="Unit content"
+                value={newUnitContent}
+                onChange={(e) => setNewUnitContent(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && addUnit()}
+                disabled={isSaving}
+              />
             </div>
 
-            {/* Units List */}
-            {syllabusUnits.length > 0 && (
-              <div className="space-y-2">
-                <Label>Units ({syllabusUnits.length})</Label>
-                <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {syllabusUnits.map((unit, index) => (
-                    <div key={index} className="flex items-start gap-2 p-3 bg-muted rounded-md">
-                      <div className="flex-1">
-                        <div className="font-medium text-sm">{unit.name}</div>
-                        <div className="text-sm text-muted-foreground">{unit.content}</div>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeUnit(index)}
-                        disabled={isSaving}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            <Button
+              type="button"
+              onClick={addUnit}
+              disabled={!newUnitName.trim() || !newUnitContent.trim() || isSaving}
+              variant="outline"
+              className="w-full"
+            >
+              <Plus className="h-4 w-4 mr-2" /> Add Unit
+            </Button>
 
-            {syllabusUnits.length === 0 && (
+            {syllabusUnits.length > 0 ? (
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {syllabusUnits.map((unit, index) => (
+                  <div key={index} className="flex items-start gap-2 p-3 bg-muted rounded-md">
+                    <div className="flex-1">
+                      <div className="font-medium text-sm">{unit.name}</div>
+                      <div className="text-sm text-muted-foreground">{unit.content}</div>
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeUnit(index)}
+                      className="text-destructive"
+                      disabled={isSaving}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : (
               <p className="text-sm text-muted-foreground text-center py-4">
-                No units added yet. Add units above to create a syllabus.
+                No units added yet. Add units above.
               </p>
             )}
           </CardContent>
@@ -365,6 +398,7 @@ export default function EditSubjectPage() {
           >
             Cancel
           </Button>
+
           <Button type="submit" disabled={isSaving}>
             {isSaving ? (
               <>
@@ -380,6 +414,26 @@ export default function EditSubjectPage() {
           </Button>
         </div>
       </form>
+
+      {/* Modals */}
+      <ErrorModal
+        open={!!error}
+        title="Error"
+        description={error}
+        okText="Close"
+        onConfirm={() => setError('')}
+      />
+
+      <SuccessModal
+        open={!!success}
+        title="Success"
+        description={success}
+        okText="OK"
+        onConfirm={() => {
+          setSuccess('');
+          navigate('/dashboard/subjects');
+        }}
+      />
     </div>
   );
 }

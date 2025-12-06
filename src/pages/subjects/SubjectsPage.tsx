@@ -44,7 +44,7 @@ import {
   BookOpen,
 } from "lucide-react";
 
-import DeleteSubjectDialog from "@/components/subjects/DeleteSubjectDialog";
+import DeleteConfirmationModal from "@/components/ui/deleteConfirmationModal";
 import { useAuthStore } from "@/store/authStore";
 
 export default function SubjectsPage() {
@@ -203,6 +203,7 @@ export default function SubjectsPage() {
         <CardContent>
           {/* Filters */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-4 mb-4 items-end">
+            {/* Search */}
             <div className="md:col-span-5">
               <Input
                 placeholder="Search by name..."
@@ -214,6 +215,7 @@ export default function SubjectsPage() {
               />
             </div>
 
+            {/* Class filter */}
             <div className="md:col-span-2">
               <Select
                 value={selectedClass}
@@ -236,6 +238,7 @@ export default function SubjectsPage() {
               </Select>
             </div>
 
+            {/* Board filter */}
             <div className="md:col-span-2">
               <Select
                 value={selectedBoard}
@@ -258,6 +261,7 @@ export default function SubjectsPage() {
               </Select>
             </div>
 
+            {/* Type filter */}
             <div className="md:col-span-2">
               <Select
                 value={selectedType}
@@ -277,6 +281,7 @@ export default function SubjectsPage() {
               </Select>
             </div>
 
+            {/* Clear filters */}
             <div className="md:col-span-1 flex justify-end">
               <Button
                 variant="outline"
@@ -294,7 +299,7 @@ export default function SubjectsPage() {
             </div>
           </div>
 
-          {/* Table */}
+          {/* Table / Cards */}
           {isLoading ? (
             <div className="flex items-center justify-center h-64">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -548,11 +553,21 @@ export default function SubjectsPage() {
         </CardContent>
       </Card>
 
+      {/* Delete Confirmation Modal */}
       {isAdmin && (
-        <DeleteSubjectDialog
-          subject={deleteSubject}
-          onClose={() => setDeleteSubject(null)}
+        <DeleteConfirmationModal
+          open={!!deleteSubject}
+          title="Delete Subject"
+          message={
+            <p>
+              Are you sure you want to delete <b>{deleteSubject?.name}</b>?
+            </p>
+          }
+          confirmText="Delete"
+          cancelText="Cancel"
           onConfirm={handleDelete}
+          onCancel={() => setDeleteSubject(null)}
+          onClose={() => setDeleteSubject(null)}
         />
       )}
     </div>

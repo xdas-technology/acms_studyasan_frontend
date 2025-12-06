@@ -111,7 +111,7 @@ export default function DashboardPage() {
 
         {isAdmin && (
           <div className="flex flex-wrap gap-2 w-full md:w-auto">
-            <Link to="/students/new" className="flex-1 md:flex-none">
+            <Link to="/dashboard/students/new" className="flex-1 md:flex-none">
               <Button variant="outline" className="border border-saBlue w-full md:w-auto justify-center">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Student

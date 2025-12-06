@@ -36,7 +36,7 @@ import {
   ChevronRight,
   Users,
 } from "lucide-react";
-import DeleteStudentDialog from "@/components/students/DeleteStudentDialog";
+import DeleteConfirmationModal from "@/components/ui/deleteConfirmationModal";
 
 interface StudentQueryParams {
   page: number;
@@ -499,11 +499,19 @@ export default function StudentsPage() {
         </CardContent>
       </Card>
 
-      {/* Delete Dialog */}
-      <DeleteStudentDialog
-        student={deleteStudent}
-        onClose={() => setDeleteStudent(null)}
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        open={!!deleteStudent}
+        title="Delete Student"
+        message={
+          <span>
+            Are you sure you want to delete <strong>{deleteStudent?.user.name}</strong>?
+          </span>
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
         onConfirm={handleDelete}
+        onCancel={() => setDeleteStudent(null)}
       />
     </div>
   );
