@@ -106,12 +106,15 @@ const navItems: NavItem[] = [
 export default function Sidebar({
   isMobileOpen,
   closeMobile,
+  collapsed,
+  setCollapsed,
 }: {
   isMobileOpen: boolean;
   closeMobile: () => void;
+  collapsed: boolean;
+  setCollapsed: (v: boolean) => void;
 }) {
   const user = useAuthStore((state) => state.user);
-  const [collapsed, setCollapsed] = useState(false);
   const [tooltip, setTooltip] = useState<{ title: string; top: number } | null>(
     null
   );
@@ -143,11 +146,19 @@ export default function Sidebar({
         {/* Header */}
         <div className="flex items-center justify-between p-3 border-b border-saBlueLight">
           <div className="flex items-center justify-center flex-1">
-            <img
-              src="/studyasan-logo.png"
-              alt="StudyAsan Logo"
-              className="h-10 w-[80%]"
-            />
+            {collapsed ? (
+              <img
+                src="/studyasan-logo-lady.png"
+                alt="StudyAsan Logo Mini"
+                className="h-8 w-8"
+              />
+            ) : (
+              <img
+                src="/studyasan-logo.png"
+                alt="StudyAsan Logo"
+                className="h-10 w-[80%]"
+              />
+            )}
           </div>
 
           <button
@@ -232,6 +243,7 @@ export default function Sidebar({
             `}
           </style>
         </nav>
+
         {/* Bottom collapse button */}
         {!isMobileOpen && (
           <div className="border-t border-saBlueLight">

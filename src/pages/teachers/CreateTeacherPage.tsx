@@ -233,7 +233,7 @@ export default function CreateTeacherPage() {
                   onChange={(e) => handleChange('salary', parseFloat(e.target.value))}
                   disabled={isLoading}
                 />
-                <p className="text-xs text-muted-foreground">Enter amount in USD</p>
+                <p className="text-xs text-muted-foreground">Enter amount in INR</p>
               </div>
             </CardContent>
           </Card>
