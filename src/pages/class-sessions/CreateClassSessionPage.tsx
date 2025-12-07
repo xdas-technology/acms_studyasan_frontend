@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Video, MapPin, Calendar, RefreshCw, Info } from 'lucide-react';
+import { ArrowLeft, Video, MapPin, RefreshCw, Info } from 'lucide-react';
 import { classSessionService, subjectService, teacherService, classService, boardService } from '@/services/api';
 import type { Subject, Teacher, Class, Board, CreateClassSessionData, ClassSession, RecurrenceRule } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,10 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAuthStore } from '@/store/authStore';
+
+// Import your modals
+import ErrorModal from '@/components/ui/errorModal';
+import SuccessModal from '@/components/ui/successModal';
 
 export default function CreateClassSessionPage() {
   const { id } = useParams<{ id: string }>();
@@ -23,6 +27,19 @@ export default function CreateClassSessionPage() {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [boards, setBoards] = useState<Board[]>([]);
+
+  // 🔥 Modal States
+  const [errorModal, setErrorModal] = useState({
+    open: false,
+    title: '',
+    description: '',
+  });
+
+  const [successModal, setSuccessModal] = useState({
+    open: false,
+    title: '',
+    description: '',
+  });
 
   const [formData, setFormData] = useState<CreateClassSessionData>({
     teacher_id: 0,
@@ -54,6 +71,7 @@ export default function CreateClassSessionPage() {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
+
       const [subjectsRes, classesRes, boardsRes] = await Promise.all([
         subjectService.getAll(),
         classService.getAll(),
@@ -68,12 +86,12 @@ export default function CreateClassSessionPage() {
         setTeachers(teachersRes.data.data);
       }
 
-      // If editing, fetch the session
+      // Editing case
       if (id) {
         const sessionRes = await classSessionService.getById(parseInt(id));
         const session: ClassSession = sessionRes.data;
-        
-        // Format dates for datetime-local input
+
+        // datetime-local formatting
         const formatForInput = (dateStr: string) => {
           const date = new Date(dateStr);
           return date.toISOString().slice(0, 16);
@@ -91,15 +109,17 @@ export default function CreateClassSessionPage() {
           end_time: formatForInput(session.end_time),
           is_recurring: session.is_recurring,
           recurrence_rule: session.recurrence_rule,
-          create_google_meet: false, // Don't create new meet when editing
+          create_google_meet: false,
         });
 
-        if (session.recurrence_rule) {
-          setRecurrenceRule(session.recurrence_rule);
-        }
+        if (session.recurrence_rule) setRecurrenceRule(session.recurrence_rule);
       }
     } catch (error) {
-      console.error('Error fetching data:', error);
+      setErrorModal({
+        open: true,
+        title: 'Fetch Error',
+        description: 'Failed to load session data.',
+      });
     } finally {
       setLoading(false);
     }
@@ -109,7 +129,7 @@ export default function CreateClassSessionPage() {
     fetchData();
   }, [fetchData]);
 
-  // Auto-set teacher for non-admin users
+  // Auto-set teacher for non-admin
   useEffect(() => {
     if (!isAdmin && teachers.length > 0 && user?.id) {
       const myTeacher = teachers.find((t) => t.user_id === user.id);
@@ -119,22 +139,32 @@ export default function CreateClassSessionPage() {
     }
   }, [isAdmin, teachers, user?.id]);
 
+  // Submit Handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.teacher_id || !formData.subject_id) {
-      alert('Please select a teacher and subject');
-      return;
+      return setErrorModal({
+        open: true,
+        title: 'Missing Required Fields',
+        description: 'Please select both teacher and subject.',
+      });
     }
 
     if (!formData.start_time || !formData.end_time) {
-      alert('Please set start and end times');
-      return;
+      return setErrorModal({
+        open: true,
+        title: 'Invalid Time',
+        description: 'Start and end time are required.',
+      });
     }
 
     if (formData.mode === 'OFFLINE' && !formData.location) {
-      alert('Please enter a location for offline sessions');
-      return;
+      return setErrorModal({
+        open: true,
+        title: 'Location Required',
+        description: 'Offline sessions must include a location.',
+      });
     }
 
     try {
@@ -147,14 +177,30 @@ export default function CreateClassSessionPage() {
 
       if (isEditing && id) {
         await classSessionService.update(parseInt(id), dataToSubmit);
+
+        setSuccessModal({
+          open: true,
+          title: 'Session Updated!',
+          description: 'The class session was successfully updated.',
+        });
+
       } else {
         await classSessionService.create(dataToSubmit);
+
+        setSuccessModal({
+          open: true,
+          title: 'Session Created!',
+          description: 'The class session has been scheduled successfully.',
+        });
       }
 
-      navigate('/dashboard/class-sessions');
+      setTimeout(() => navigate('/dashboard/class-sessions'), 1500);
     } catch (error: any) {
-      console.error('Error saving session:', error);
-      alert(error.response?.data?.message || 'Failed to save session');
+      setErrorModal({
+        open: true,
+        title: 'Save Failed',
+        description: error.response?.data?.message || 'Something went wrong.',
+      });
     } finally {
       setSubmitting(false);
     }
@@ -180,22 +226,26 @@ export default function CreateClassSessionPage() {
   }
 
   return (
-    <div className="p-2 sm:p-0 max-w-3xl mx-auto">
-      {/* Back Button */}
-      <Button
-        variant="ghost"
-        className="mb-4"
-        onClick={() => navigate('/dashboard/class-sessions')}
-      >
-        <ArrowLeft className="w-4 h-4 mr-2" /> Back to Sessions
-      </Button>
+    <div className="space-y-6">
+
+      {/* BACK LINK */}
+      <div className="mb-6">
+        <a
+          onClick={() => navigate('/dashboard/class-sessions')}
+          className="inline-flex items-center text-blue-600 hover:underline cursor-pointer w-auto"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Sessions
+        </a>
+      </div>
 
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="text-xl sm:text-2xl text-gray-700">
+          <CardTitle className="text-xl sm:text-2xl text-gray-600">
             {isEditing ? 'Edit Class Session' : 'Schedule New Class Session'}
           </CardTitle>
         </CardHeader>
+
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Mode Selection */}
@@ -233,7 +283,7 @@ export default function CreateClassSessionPage() {
             {/* Subject & Teacher */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="subject">Subject *</Label>
+                <Label htmlFor="subject" className='text-gray-600'>Subject *</Label>
                 <select
                   id="subject"
                   className="w-full p-2 border rounded-md mt-1"
@@ -252,7 +302,7 @@ export default function CreateClassSessionPage() {
 
               {isAdmin && (
                 <div>
-                  <Label htmlFor="teacher">Teacher *</Label>
+                  <Label htmlFor="teacher" className='text-gray-600'>Teacher *</Label>
                   <select
                     id="teacher"
                     className="w-full p-2 border rounded-md mt-1"
@@ -274,7 +324,7 @@ export default function CreateClassSessionPage() {
             {/* Class & Board (optional) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="class">Class (Optional)</Label>
+                <Label htmlFor="class" className='text-gray-600'>Class (Optional)</Label>
                 <select
                   id="class"
                   className="w-full p-2 border rounded-md mt-1"
@@ -291,7 +341,7 @@ export default function CreateClassSessionPage() {
               </div>
 
               <div>
-                <Label htmlFor="board">Board (Optional)</Label>
+                <Label htmlFor="board" className='text-gray-600'>Board (Optional)</Label>
                 <select
                   id="board"
                   className="w-full p-2 border rounded-md mt-1"
@@ -311,7 +361,7 @@ export default function CreateClassSessionPage() {
             {/* Date & Time */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="start_time">Start Time *</Label>
+                <Label htmlFor="start_time" className='text-gray-600'>Start Time *</Label>
                 <Input
                   id="start_time"
                   type="datetime-local"
@@ -323,7 +373,7 @@ export default function CreateClassSessionPage() {
               </div>
 
               <div>
-                <Label htmlFor="end_time">End Time *</Label>
+                <Label htmlFor="end_time" className='text-gray-600'>End Time *</Label>
                 <Input
                   id="end_time"
                   type="datetime-local"
@@ -344,8 +394,8 @@ export default function CreateClassSessionPage() {
                     checked={formData.create_google_meet}
                     onCheckedChange={(checked: boolean) => setFormData((prev) => ({ ...prev, create_google_meet: checked }))}
                   />
-                  <Label htmlFor="create_google_meet" className="flex items-center gap-2 cursor-pointer">
-                    <Video className="w-4 h-4 text-saBlue" />
+                  <Label htmlFor="create_google_meet" className="flex items-center gap-2 cursor-pointer text-gray-600">
+                    <Video className="w-4 h-4 text-saBlue/50" />
                     Auto-create Google Meet
                   </Label>
                 </div>
@@ -386,7 +436,7 @@ export default function CreateClassSessionPage() {
 
             {/* Optional title & description */}
             <div>
-              <Label htmlFor="title">Session Title (Optional)</Label>
+              <Label htmlFor="title" className='text-gray-600'>Session Title (Optional)</Label>
               <Input
                 id="title"
                 type="text"
@@ -398,7 +448,7 @@ export default function CreateClassSessionPage() {
             </div>
 
             <div>
-              <Label htmlFor="description">Description (Optional)</Label>
+              <Label htmlFor="description" className='text-gray-600'>Description (Optional)</Label>
               <textarea
                 id="description"
                 className="w-full p-2 border rounded-md mt-1 min-h-[80px]"
@@ -416,8 +466,8 @@ export default function CreateClassSessionPage() {
                   checked={formData.is_recurring}
                   onCheckedChange={(checked: boolean) => setFormData((prev) => ({ ...prev, is_recurring: checked }))}
                 />
-                <Label htmlFor="is_recurring" className="flex items-center gap-2 cursor-pointer">
-                  <RefreshCw className="w-4 h-4 text-saBlue" />
+                <Label htmlFor="is_recurring" className="flex items-center gap-2 cursor-pointer text-gray-600">
+                  <RefreshCw className="w-4 h-4 text-saBlue/50" />
                   Make this a recurring class
                 </Label>
               </div>
@@ -512,34 +562,49 @@ export default function CreateClassSessionPage() {
 
             {/* Info Box */}
             <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
-              <Info className="w-5 h-5 text-saBlue shrink-0 mt-0.5" />
+              <Info className="w-5 h-5 text-saBlue/50 shrink-0 mt-0.5" />
               <div>
-                <p className="font-medium text-gray-700">Notification</p>
+                <p className="font-medium text-gray-600">Notification</p>
                 <p>All enrolled students will receive a notification about this class session when it's created.</p>
               </div>
             </div>
 
             {/* Submit Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1"
+             <div className="flex flex-col sm:flex-row gap-3 pt-4">
+              <Button type="button" variant="outline" className="flex-1"
                 onClick={() => navigate('/dashboard/class-sessions')}
               >
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                className="flex-1 bg-saBlue hover:bg-saBlueDarkHover text-white"
-                disabled={submitting}
-              >
+
+              <Button type="submit" className="flex-1 bg-saBlue hover:bg-saBlueDarkHover text-white" disabled={submitting}>
                 {submitting ? 'Saving...' : isEditing ? 'Update Session' : 'Schedule Session'}
               </Button>
             </div>
+
           </form>
         </CardContent>
       </Card>
+
+      {/* 🔥 SUCCESS MODAL */}
+      <SuccessModal
+        open={successModal.open}
+        title={successModal.title}
+        description={successModal.description}
+        autoClose={1500}
+        onClose={() => setSuccessModal({ ...successModal, open: false })}
+      />
+
+      {/* 🔥 ERROR MODAL */}
+      <ErrorModal
+        open={errorModal.open}
+        title={errorModal.title}
+        description={errorModal.description}
+        okText="Close"
+        onConfirm={() => setErrorModal({ ...errorModal, open: false })}
+        onClose={() => setErrorModal({ ...errorModal, open: false })}
+      />
+
     </div>
   );
 }

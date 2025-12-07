@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Video, MapPin, Clock, Calendar, Users, RefreshCw, User, ArrowLeft, ExternalLink } from 'lucide-react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { Video, MapPin, Clock, Calendar, Users, RefreshCw, User, ExternalLink, ArrowLeft } from 'lucide-react';
 import { classSessionService } from '@/services/api';
 import type { ClassSession } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAuthStore } from '@/store/authStore';
+import DeleteConfirmationModal from '@/components/ui/deleteConfirmationModal';
 
 export default function ClassSessionDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -15,6 +16,7 @@ export default function ClassSessionDetailPage() {
   const [loading, setLoading] = useState(true);
   const [canJoin, setCanJoin] = useState(false);
   const [joinReason, setJoinReason] = useState('');
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const { user } = useAuthStore();
 
   const isAdmin = user?.role === 'ADMIN';
@@ -45,7 +47,7 @@ export default function ClassSessionDetailPage() {
 
   const getSessionStatus = () => {
     if (!session) return { label: 'Unknown', color: 'bg-gray-500' };
-    
+
     const now = new Date();
     const start = new Date(session.start_time);
     const end = new Date(session.end_time);
@@ -114,7 +116,7 @@ export default function ClassSessionDetailPage() {
   };
 
   const handleDelete = async () => {
-    if (!session || !confirm('Are you sure you want to delete this class session?')) return;
+    if (!session) return;
     try {
       await classSessionService.delete(session.id);
       navigate('/dashboard/class-sessions');
@@ -136,7 +138,9 @@ export default function ClassSessionDetailPage() {
     return (
       <div className="text-center py-12">
         <p className="text-gray-600 mb-4">Session not found</p>
-        <Button onClick={() => navigate('/dashboard/class-sessions')}>Back to Sessions</Button>
+        <Link to="/dashboard/class-sessions">
+          <Button>Back to Sessions</Button>
+        </Link>
       </div>
     );
   }
@@ -144,20 +148,19 @@ export default function ClassSessionDetailPage() {
   const status = getSessionStatus();
 
   return (
-    <div className="p-2 sm:p-0 max-w-4xl mx-auto">
-      {/* Back Button */}
-      <Button
-        variant="ghost"
-        className="mb-4"
-        onClick={() => navigate('/dashboard/class-sessions')}
+    <div className="space-y-6">
+      {/* Back Link */}
+      <Link
+        to="/dashboard/class-sessions"
+        className="inline-flex items-center mb-4 text-saBlue font-medium hover:underline"
       >
         <ArrowLeft className="w-4 h-4 mr-2" /> Back to Sessions
-      </Button>
+      </Link>
 
       {/* Main Card */}
       <Card className="shadow-lg rounded-2xl overflow-hidden">
         {/* Header */}
-        <div className={`${session.mode === 'ONLINE' ? 'bg-saBlueLight/60' : 'bg-amber-100'} p-6`}>
+        <div className={`${session.mode === 'ONLINE' ? 'bg-saBlueLight/60' : 'bg-saBlueLight/60'} p-6`}>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-3">
               {session.mode === 'ONLINE' ? (
@@ -165,8 +168,8 @@ export default function ClassSessionDetailPage() {
                   <Video className="w-8 h-8 text-saBlue" />
                 </div>
               ) : (
-                <div className="p-3 bg-amber-200 rounded-full">
-                  <MapPin className="w-8 h-8 text-amber-600" />
+                <div className="p-3 bg-saBlue/20 rounded-full">
+                  <MapPin className="w-8 h-8 text-saBlue" />
                 </div>
               )}
               <div>
@@ -225,34 +228,34 @@ export default function ClassSessionDetailPage() {
               <h3 className="font-semibold text-gray-700 border-b pb-2">Schedule</h3>
               
               <div className="flex items-start gap-3">
-                <Calendar className="w-5 h-5 text-saBlue mt-0.5" />
+                <Calendar className="w-5 h-5 text-saBlue/50 mt-0.5" />
                 <div>
-                  <p className="font-medium text-gray-800">Start Time</p>
+                  <p className="font-medium text-gray-600">Start Time</p>
                   <p className="text-gray-600 text-sm">{formatDateTime(session.start_time)}</p>
                 </div>
               </div>
 
               <div className="flex items-start gap-3">
-                <Calendar className="w-5 h-5 text-saBlue mt-0.5" />
+                <Calendar className="w-5 h-5 text-saBlue/50 mt-0.5" />
                 <div>
-                  <p className="font-medium text-gray-800">End Time</p>
+                  <p className="font-medium text-gray-600">End Time</p>
                   <p className="text-gray-600 text-sm">{formatDateTime(session.end_time)}</p>
                 </div>
               </div>
 
               <div className="flex items-start gap-3">
-                <Clock className="w-5 h-5 text-saBlue mt-0.5" />
+                <Clock className="w-5 h-5 text-saBlue/50 mt-0.5" />
                 <div>
-                  <p className="font-medium text-gray-800">Duration</p>
+                  <p className="font-medium text-gray-600">Duration</p>
                   <p className="text-gray-600 text-sm">{getDuration()}</p>
                 </div>
               </div>
 
               {session.is_recurring && session.recurrence_rule && (
                 <div className="flex items-start gap-3">
-                  <RefreshCw className="w-5 h-5 text-saBlue mt-0.5" />
+                  <RefreshCw className="w-5 h-5 text-saBlue/50 mt-0.5" />
                   <div>
-                    <p className="font-medium text-gray-800">Recurrence</p>
+                    <p className="font-medium text-gray-600">Recurrence</p>
                     <p className="text-gray-600 text-sm">{formatRecurrenceRule()}</p>
                   </div>
                 </div>
@@ -263,9 +266,9 @@ export default function ClassSessionDetailPage() {
               <h3 className="font-semibold text-gray-700 border-b pb-2">Details</h3>
 
               <div className="flex items-start gap-3">
-                <User className="w-5 h-5 text-saBlue mt-0.5" />
+                <User className="w-5 h-5 text-saBlue/50 mt-0.5" />
                 <div>
-                  <p className="font-medium text-gray-800">Teacher</p>
+                  <p className="font-medium text-gray-600">Teacher</p>
                   <p className="text-gray-600 text-sm">{session.teacher?.user?.name || 'Not assigned'}</p>
                   {session.teacher?.user?.email && (
                     <p className="text-gray-400 text-xs">{session.teacher.user.email}</p>
@@ -275,9 +278,9 @@ export default function ClassSessionDetailPage() {
 
               {session.class && (
                 <div className="flex items-start gap-3">
-                  <Users className="w-5 h-5 text-saBlue mt-0.5" />
+                  <Users className="w-5 h-5 text-saBlue/50 mt-0.5" />
                   <div>
-                    <p className="font-medium text-gray-800">Class</p>
+                    <p className="font-medium text-gray-600">Class</p>
                     <p className="text-gray-600 text-sm">{session.class.name}</p>
                   </div>
                 </div>
@@ -285,9 +288,9 @@ export default function ClassSessionDetailPage() {
 
               {session.board && (
                 <div className="flex items-start gap-3">
-                  <Users className="w-5 h-5 text-saBlue mt-0.5" />
+                  <Users className="w-5 h-5 text-saBlue/50 mt-0.5" />
                   <div>
-                    <p className="font-medium text-gray-800">Board</p>
+                    <p className="font-medium text-gray-600">Board</p>
                     <p className="text-gray-600 text-sm">{session.board.name}</p>
                   </div>
                 </div>
@@ -295,18 +298,18 @@ export default function ClassSessionDetailPage() {
 
               {session.mode === 'OFFLINE' && session.location && (
                 <div className="flex items-start gap-3">
-                  <MapPin className="w-5 h-5 text-amber-500 mt-0.5" />
+                  <MapPin className="w-5 h-5 text-saBlue/50 mt-0.5" />
                   <div>
-                    <p className="font-medium text-gray-800">Location</p>
+                    <p className="font-medium text-gray-600">Location</p>
                     <p className="text-gray-600 text-sm">{session.location}</p>
                   </div>
                 </div>
               )}
 
               <div className="flex items-start gap-3">
-                <Users className="w-5 h-5 text-saBlue mt-0.5" />
+                <Users className="w-5 h-5 text-saBlue/50 mt-0.5" />
                 <div>
-                  <p className="font-medium text-gray-800">Attendees</p>
+                  <p className="font-medium text-gray-600">Attendees</p>
                   <p className="text-gray-600 text-sm">{session._count?.attendances || 0} joined</p>
                 </div>
               </div>
@@ -333,7 +336,7 @@ export default function ClassSessionDetailPage() {
             </div>
           )}
 
-          {/* Actions */}
+           {/* Actions */}
           {canManage && (
             <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
               <Button
@@ -346,7 +349,7 @@ export default function ClassSessionDetailPage() {
               <Button
                 variant="destructive"
                 className="flex-1"
-                onClick={handleDelete}
+                onClick={() => setDeleteModalOpen(true)}
               >
                 Delete Session
               </Button>
@@ -354,6 +357,20 @@ export default function ClassSessionDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        open={deleteModalOpen}
+        title="Delete Class Session"
+        message={`Are you sure you want to delete "${session.subject?.name || 'this session'}"?`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={() => {
+          handleDelete();
+          setDeleteModalOpen(false);
+        }}
+        onCancel={() => setDeleteModalOpen(false)}
+      />
     </div>
   );
 }

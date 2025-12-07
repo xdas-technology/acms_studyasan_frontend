@@ -150,7 +150,7 @@ const ClassesPage: React.FC = () => {
               {classes.map((classItem) => (
                 <div
                   key={classItem.id}
-                  className="border rounded-lg p-4 hover:shadow-md transition-shadow flex flex-col justify-between"
+                  className="border bg-gray-50 rounded-lg p-4 hover:shadow-md transition-shadow flex flex-col justify-between"
                 >
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">{classItem.name}</h3>
@@ -163,7 +163,7 @@ const ClassesPage: React.FC = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => handleDeleteClick(classItem)}
-                      className="mt-4 text-red-600 hover:text-red-700 w-full"
+                      className="mt-4 text-red-600 hover:text-red-700 w-full border-red-300"
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
                       Delete
