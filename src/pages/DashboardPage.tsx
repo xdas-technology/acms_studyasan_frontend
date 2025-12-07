@@ -18,7 +18,6 @@ import {
 } from "@/services/api";
 import { useAuthStore } from "@/store/authStore";
 import StatsCard from "@/components/dashboard/StatsCard";
-import RecentActivity from "@/components/dashboard/RecentActivity";
 import QuickActions from '@/components/dashboard/QuickActions';
 
 export default function DashboardPage() {
@@ -139,7 +138,6 @@ export default function DashboardPage() {
 
       {/* Recent Activity + Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <RecentActivity />
 
   <QuickActions />
       </div>
