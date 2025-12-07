@@ -138,7 +138,7 @@ export default function TeacherDetailPage() {
     salary
       ? new Intl.NumberFormat("en-US", {
           style: "currency",
-          currency: "USD",
+          currency: "INR",
         }).format(salary)
       : "-";
 
