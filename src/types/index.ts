@@ -193,14 +193,33 @@ export interface UpdateBoardData { name: string; }
 export interface CreateClassData { name: string; }
 export interface UpdateClassData { name: string; }
 
+// ================== CURRENCY TYPES ==================
+export interface Currency {
+  id: number;
+  code: string;      // e.g., "USD", "INR"
+  name: string;      // e.g., "United States Dollar"
+  symbol: string;    // e.g., "$"
+  created_at?: string;
+  updated_at?: string;
+}
+
 // ================== TEACHER TYPES ==================
 export interface Teacher {
   id: number;
   user_id: number;
   salary: number | null;
+  salary_currency?: Currency | null;
   qualification: string | null;
   gender: 'M' | 'F' | 'OTHER' | null;
   experience: string | null;
+  address?: {
+    id: number;
+    addressLine: string;
+    postalCode: string;
+    country: { id: number; name: string };
+    state: { id: number; name: string };
+    city: { id: number; name: string };
+  } | null;
   created_at: string;
   updated_at: string;
   user: {
@@ -213,6 +232,8 @@ export interface Teacher {
   teacher_subject_junctions?: {
     id: number;
     subject_id: number;
+    created_on?: string; // timestamp when the subject was assigned
+    updated_on?: string;
     subject: {
       id: number;
       name: string;
@@ -227,16 +248,33 @@ export interface CreateTeacherData {
   phone: string;
   password: string;
   salary: number | null;
+  salary_currency_id?: number | null;
   qualification: string | null;
   gender: 'M' | 'F' | 'OTHER' | null;
   experience: string | null;
+  // optional address object for teacher
+  address?: {
+    addressLine: string;
+    postalCode: string;
+    countryId: number;
+    stateId: number;
+    cityId: number;
+  };
 }
 
 export interface UpdateTeacherData {
   salary?: number | null;
+  salary_currency_id?: number | null;
   qualification?: string | null;
   gender?: 'M' | 'F' | 'OTHER' | null;
   experience?: string | null;
+  address?: {
+    addressLine?: string | null;
+    postalCode?: string | null;
+    countryId?: number | null;
+    stateId?: number | null;
+    cityId?: number | null;
+  };
 }
 
 export interface TeacherSubjectAssignment {

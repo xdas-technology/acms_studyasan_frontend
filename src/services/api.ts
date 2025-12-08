@@ -55,8 +55,9 @@ import type {
   CanJoinSessionResponse,
   ChatMessagesResponse,
   Country,
+  Currency,
   State,
-  City
+  City,
 } from '@/types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
@@ -287,7 +288,8 @@ export const teacherService = {
 
   getById: async (id: number): Promise<{ success: boolean; data: Teacher }> => {
     const response = await api.get(`/teachers/${id}`);
-    return response.data;
+    // normalize: if backend wraps response as { success, message, data }, return data, else return response.data
+    return (response.data && (response.data.data ?? response.data)) as any;
   },
 
   create: async (data: CreateTeacherData): Promise<{ success: boolean; data: Teacher }> => {
@@ -301,13 +303,18 @@ export const teacherService = {
     });
 
     // Then create the teacher profile
-    const teacherResponse = await api.post('/teachers', {
+    const teacherPayload: any = {
       user_id: userResponse.data.data.user.id,
       salary: data.salary,
+      salary_currency_id: data.salary_currency_id,
       qualification: data.qualification,
       gender: data.gender,
       experience: data.experience,
-    });
+    };
+
+    if (data.address) teacherPayload.address = data.address;
+
+    const teacherResponse = await api.post('/teachers', teacherPayload);
 
     return teacherResponse.data;
   },
@@ -316,7 +323,11 @@ export const teacherService = {
     id: number,
     data: UpdateTeacherData
   ): Promise<{ success: boolean; data: Teacher }> => {
-    const response = await api.put(`/teachers/${id}`, data);
+    const payload: any = { ...data };
+    // if address is present, send nested address object
+    if (data.address) payload.address = data.address;
+
+    const response = await api.put(`/teachers/${id}`, payload);
     return response.data;
   },
 
@@ -802,6 +813,15 @@ export const locationService = {
   getCitiesByState: async (stateId: number): Promise<City[]> => {
     const response = await api.get(`/locations/states/${stateId}/cities`);
     return response.data.data as City[];
+  },
+};
+
+
+// Currency Service
+export const currencyService = {
+  getAll: async (): Promise<Currency[]> => {
+    const response = await api.get('/currencies');
+    return response.data.data as Currency[];
   },
 };
 

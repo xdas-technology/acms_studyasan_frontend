@@ -25,7 +25,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { teacherService } from "@/services/api";
-import type { Teacher } from "@/types";
+import type { Teacher, Currency } from "@/types";
 import {
   Plus,
   Eye,
@@ -107,8 +107,11 @@ export default function TeachersPage() {
     return <span className="text-gray-700 font-medium">{text}</span>;
   };
 
-  const formatSalary = (salary: number | null) => {
+  const formatSalary = (salary: number | null, currency?: Currency | null) => {
     if (!salary) return "-";
+    if (currency && currency.symbol) {
+      return `${currency.symbol} ${salary.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency.code}`;
+    }
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
@@ -247,7 +250,7 @@ export default function TeachersPage() {
                           <TableCell>{teacher.qualification || "-"}</TableCell>
                           <TableCell>{teacher.experience || "-"}</TableCell>
                           <TableCell>{getGenderSpan(teacher.gender)}</TableCell>
-                          <TableCell>{formatSalary(teacher.salary)}</TableCell>
+                          <TableCell>{formatSalary(teacher.salary, teacher.salary_currency ?? null)}</TableCell>
                           <TableCell>
                             {teacher._count?.teacher_subject_junctions || 0}
                           </TableCell>
@@ -358,7 +361,7 @@ export default function TeachersPage() {
                             <span className="font-medium text-gray-800">
                               Salary
                             </span>
-                            <span>{formatSalary(teacher.salary)}</span>
+                            <span>{formatSalary(teacher.salary, teacher.salary_currency ?? null)}</span>
                           </div>
                           <div className="flex flex-col col-span-2">
                             <span className="font-medium text-gray-800">
