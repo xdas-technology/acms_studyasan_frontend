@@ -32,10 +32,16 @@ import type {
   State,
   City,
 } from "@/types";
-import { ArrowLeft, Loader2, Save } from "lucide-react";
+import { ArrowLeft, Loader2, Save, Check, ChevronsUpDown } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import SuccessModal from "@/components/ui/successModal";
 import ErrorModal from "@/components/ui/errorModal";
+import { cn } from "@/lib/utils";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 export default function EditStudentPage() {
   const navigate = useNavigate();
@@ -55,6 +61,14 @@ export default function EditStudentPage() {
     null
   );
   const [selectedStateId, setSelectedStateId] = useState<number | null>(null);
+
+  const [countryOpen, setCountryOpen] = useState(false);
+  const [stateOpen, setStateOpen] = useState(false);
+  const [cityOpen, setCityOpen] = useState(false);
+
+  const [countrySearch, setCountrySearch] = useState("");
+  const [stateSearch, setStateSearch] = useState("");
+  const [citySearch, setCitySearch] = useState("");
 
   const [errorOpen, setErrorOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -616,49 +630,144 @@ Object.entries(transformedData).forEach(([key, value]) => {
                   <Label htmlFor="country" className="text-gray-600">
                     Country
                   </Label>
-                  <Select
-                    value={formData.countryId?.toString() || "none"}
-                    onValueChange={handleCountryChange}
-                    disabled={isSaving}
-                  >
-                    <SelectTrigger id="country">
-                      <SelectValue placeholder="Select country" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Select a country</SelectItem>
-                      {countries.map((country) => (
-                        <SelectItem
-                          key={country.id}
-                          value={country.id.toString()}
-                        >
-                          {country.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover open={countryOpen} onOpenChange={setCountryOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={countryOpen}
+                        className="w-full justify-between"
+                        disabled={isSaving}
+                      >
+                        {formData.countryId
+                          ? countries.find((country) => country.id === formData.countryId)?.name
+                          : "Select country..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0">
+                      <div className="p-2">
+                        <input
+                          type="text"
+                          placeholder="Search country..."
+                          className="w-full px-2 py-1 border rounded"
+                          value={countrySearch}
+                          onChange={(e) => setCountrySearch(e.target.value)}
+                        />
+                        <div className="max-h-60 overflow-y-auto">
+                          <div
+                            className="flex items-center px-2 py-1 hover:bg-gray-100 cursor-pointer"
+                            onClick={() => {
+                              handleCountryChange("none");
+                              setCountryOpen(false);
+                              setCountrySearch("");
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                !formData.countryId ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            None
+                          </div>
+                          {countries
+                            .filter(country => country.name.toLowerCase().includes(countrySearch.toLowerCase()))
+                            .map((country) => (
+                              <div
+                                key={country.id}
+                                className="flex items-center px-2 py-1 hover:bg-gray-100 cursor-pointer"
+                                onClick={() => {
+                                  handleCountryChange(country.id.toString());
+                                  setCountryOpen(false);
+                                  setCountrySearch("");
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    formData.countryId === country.id ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {country.name}
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="state" className="text-gray-600">
                     State
                   </Label>
-                  <Select
-                    value={formData.stateId?.toString() || "none"}
-                    onValueChange={handleStateChange}
-                    disabled={!selectedCountryId || isSaving}
-                  >
-                    <SelectTrigger id="state">
-                      <SelectValue placeholder="Select state" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Select a state</SelectItem>
-                      {states.map((state) => (
-                        <SelectItem key={state.id} value={state.id.toString()}>
-                          {state.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover open={stateOpen} onOpenChange={setStateOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={stateOpen}
+                        className="w-full justify-between"
+                        disabled={!selectedCountryId || isSaving}
+                      >
+                        {formData.stateId
+                          ? states.find((state) => state.id === formData.stateId)?.name
+                          : "Select state..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0">
+                      <div className="p-2">
+                        <input
+                          type="text"
+                          placeholder="Search state..."
+                          className="w-full px-2 py-1 border rounded"
+                          value={stateSearch}
+                          onChange={(e) => setStateSearch(e.target.value)}
+                        />
+                        <div className="max-h-60 overflow-y-auto">
+                          <div
+                            className="flex items-center px-2 py-1 hover:bg-gray-100 cursor-pointer"
+                            onClick={() => {
+                              handleStateChange("none");
+                              setStateOpen(false);
+                              setStateSearch("");
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                !formData.stateId ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            None
+                          </div>
+                          {states
+                            .filter(state => state.name.toLowerCase().includes(stateSearch.toLowerCase()))
+                            .map((state) => (
+                              <div
+                                key={state.id}
+                                className="flex items-center px-2 py-1 hover:bg-gray-100 cursor-pointer"
+                                onClick={() => {
+                                  handleStateChange(state.id.toString());
+                                  setStateOpen(false);
+                                  setStateSearch("");
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    formData.stateId === state.id ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {state.name}
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
 
@@ -667,28 +776,72 @@ Object.entries(transformedData).forEach(([key, value]) => {
                   <Label htmlFor="city" className="text-gray-600">
                     City
                   </Label>
-                  <Select
-                    value={formData.cityId?.toString() || "none"}
-                    onValueChange={(value) =>
-                      handleChange(
-                        "cityId",
-                        value === "none" ? null : parseInt(value)
-                      )
-                    }
-                    disabled={!selectedStateId || isSaving}
-                  >
-                    <SelectTrigger id="city">
-                      <SelectValue placeholder="Select city" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Select a city</SelectItem>
-                      {cities.map((city) => (
-                        <SelectItem key={city.id} value={city.id.toString()}>
-                          {city.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover open={cityOpen} onOpenChange={setCityOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={cityOpen}
+                        className="w-full justify-between"
+                        disabled={!selectedStateId || isSaving}
+                      >
+                        {formData.cityId
+                          ? cities.find((city) => city.id === formData.cityId)?.name
+                          : "Select city..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0">
+                      <div className="p-2">
+                        <input
+                          type="text"
+                          placeholder="Search city..."
+                          className="w-full px-2 py-1 border rounded"
+                          value={citySearch}
+                          onChange={(e) => setCitySearch(e.target.value)}
+                        />
+                        <div className="max-h-60 overflow-y-auto">
+                          <div
+                            className="flex items-center px-2 py-1 hover:bg-gray-100 cursor-pointer"
+                            onClick={() => {
+                              handleChange("cityId", null);
+                              setCityOpen(false);
+                              setCitySearch("");
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                !formData.cityId ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            None
+                          </div>
+                          {cities
+                            .filter(city => city.name.toLowerCase().includes(citySearch.toLowerCase()))
+                            .map((city) => (
+                              <div
+                                key={city.id}
+                                className="flex items-center px-2 py-1 hover:bg-gray-100 cursor-pointer"
+                                onClick={() => {
+                                  handleChange("cityId", city.id);
+                                  setCityOpen(false);
+                                  setCitySearch("");
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    formData.cityId === city.id ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {city.name}
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 <div className="space-y-2">
