@@ -1,3 +1,4 @@
+// ================== USER & AUTH ==================
 export interface User {
   id: number;
   name: string;
@@ -30,6 +31,7 @@ export interface RegisterData {
   role?: string;
 }
 
+// ================== NOTIFICATIONS ==================
 export interface Notification {
   id: number;
   user_id: number;
@@ -41,6 +43,7 @@ export interface Notification {
   updated_at: string;
 }
 
+// ================== PAGINATION & ERRORS ==================
 export interface PaginatedResponse<T> {
   success: boolean;
   message: string;
@@ -61,7 +64,26 @@ export interface ApiError {
   errors?: any;
 }
 
+// ================== LOCATION TYPES ==================
+export interface Country {
+  id: number;
+  name: string;
+  code: string;
+}
 
+export interface State {
+  id: number;
+  name: string;
+  countryId?: number;
+}
+
+export interface City {
+  id: number;
+  name: string;
+  stateId?: number;
+}
+
+// ================== STUDENT TYPES ==================
 export interface Student {
   id: number;
   user_id: number;
@@ -78,19 +100,80 @@ export interface Student {
     email: string;
     phone: string;
   };
-  class: {
+  class: { id: number; name: string } | null;
+  board: { id: number; name: string } | null;
+  address?: {
     id: number;
-    name: string;
-  } | null;
-  board: {
-    id: number;
-    name: string;
-  } | null;
-  _count?: {
-    enrollments: number;
+    addressLine: string;
+    postalCode?: string | null;
+    country: { id: number; name: string };
+    state: { id: number; name: string };
+    city: { id: number; name: string };
   };
+  _count?: { enrollments: number };
+  blood_group?: 'A_POS' | 'A_NEG' | 'B_POS' | 'B_NEG' | 'AB_POS' | 'AB_NEG' | 'O_POS' | 'O_NEG' | null;
 }
 
+
+// ================== CREATE & UPDATE STUDENT ==================
+export interface CreateStudentData {
+  name: string;
+  email: string;
+  phone: string;
+  password: string;
+
+  class_id: number | null;
+  board_id: number | null;
+
+  date_of_birth: string | null;
+  gender: 'M' | 'F' | 'OTHER' | null;
+  school: string | null;
+  blood_group?: 
+    | 'A_POS' 
+    | 'A_NEG' 
+    | 'B_POS' 
+    | 'B_NEG' 
+    | 'AB_POS' 
+    | 'AB_NEG' 
+    | 'O_POS' 
+    | 'O_NEG'
+    | null;
+
+  addressLine: string;
+  countryId: number;
+  stateId: number;
+  cityId: number;
+  postalCode: string;
+}
+
+
+export interface UpdateStudentData {
+  class_id?: number | null;
+  board_id?: number | null;
+
+  date_of_birth?: string | null;
+  gender?: 'M' | 'F' | 'OTHER' | null;
+  school?: string | null;
+  blood_group?:
+    | 'A_POS'
+    | 'A_NEG'
+    | 'B_POS'
+    | 'B_NEG'
+    | 'AB_POS'
+    | 'AB_NEG'
+    | 'O_POS'
+    | 'O_NEG'
+    | null;
+
+  addressLine?: string | null;
+  postalCode?: string | null;
+  countryId?: number | null;
+  stateId?: number | null;
+  cityId?: number | null;
+}
+
+
+// ================== BOARD & CLASS TYPES ==================
 export interface Board {
   id: number;
   name: string;
@@ -105,42 +188,12 @@ export interface Class {
   updated_at: string;
 }
 
-export interface CreateBoardData {
-  name: string;
-}
+export interface CreateBoardData { name: string; }
+export interface UpdateBoardData { name: string; }
+export interface CreateClassData { name: string; }
+export interface UpdateClassData { name: string; }
 
-export interface UpdateBoardData {
-  name: string;
-}
-
-export interface CreateClassData {
-  name: string;
-}
-
-export interface UpdateClassData {
-  name: string;
-}
-
-export interface CreateStudentData {
-  name: string;
-  email: string;
-  phone: string;
-  password: string;
-  class_id: number | null;
-  board_id: number | null;
-  date_of_birth: string | null;
-  gender: 'M' | 'F' | 'OTHER' | null;
-  school: string | null;
-}
-
-export interface UpdateStudentData {
-  class_id?: number | null;
-  board_id?: number | null;
-  date_of_birth?: string | null;
-  gender?: 'M' | 'F' | 'OTHER' | null;
-  school?: string | null;
-}
-
+// ================== TEACHER TYPES ==================
 export interface Teacher {
   id: number;
   user_id: number;
@@ -156,85 +209,16 @@ export interface Teacher {
     email: string;
     phone: string;
   };
-  _count?: {
-    teacher_subject_junctions: number;
-  };
+  _count?: { teacher_subject_junctions: number };
   teacher_subject_junctions?: {
     id: number;
     subject_id: number;
     subject: {
       id: number;
       name: string;
-      class: {
-        id: number;
-        name: string;
-      } | null;
+      class: { id: number; name: string } | null;
     };
   }[];
-}
-
-export interface Subject {
-  id: number;
-  name: string;
-  cover_image: string | null;
-  class_id: number | null;
-  board_id: number | null;
-  syllabus: any;
-  is_course: boolean;
-  created_at: string;
-  updated_at: string;
-  class: {
-    id: number;
-    name: string;
-  } | null;
-  board: {
-    id: number;
-    name: string;
-  } | null;
-  _count?: {
-    enrollments: number;
-    teacher_subject_junctions: number;
-  };
-  enrollments?: {
-    id: number;
-    student: {
-      id: number;
-      user: {
-        id: number;
-        name: string;
-        email: string;
-      };
-    };
-  }[];
-  teacher_subject_junctions?: {
-    id: number;
-    teacher: {
-      id: number;
-      user: {
-        id: number;
-        name: string;
-        email: string;
-      };
-    };
-  }[];
-}
-
-export interface CreateSubjectData {
-  name: string;
-  cover_image: string | null;
-  class_id: number | null;
-  board_id: number | null;
-  syllabus: any;
-  is_course: boolean;
-}
-
-export interface UpdateSubjectData {
-  name?: string;
-  cover_image?: string | null;
-  class_id?: number | null;
-  board_id?: number | null;
-  syllabus?: any;
-  is_course?: boolean;
 }
 
 export interface CreateTeacherData {
@@ -260,6 +244,49 @@ export interface TeacherSubjectAssignment {
   subject_id: number;
 }
 
+// ================== SUBJECT TYPES ==================
+export interface Subject {
+  id: number;
+  name: string;
+  cover_image: string | null;
+  class_id: number | null;
+  board_id: number | null;
+  syllabus: any;
+  is_course: boolean;
+  created_at: string;
+  updated_at: string;
+  class: { id: number; name: string } | null;
+  board: { id: number; name: string } | null;
+  _count?: { enrollments: number; teacher_subject_junctions: number };
+  enrollments?: {
+    id: number;
+    student: { id: number; user: { id: number; name: string; email: string } };
+  }[];
+  teacher_subject_junctions?: {
+    id: number;
+    teacher: { id: number; user: { id: number; name: string; email: string } };
+  }[];
+}
+
+export interface CreateSubjectData {
+  name: string;
+  cover_image: string | null;
+  class_id: number | null;
+  board_id: number | null;
+  syllabus: any;
+  is_course: boolean;
+}
+
+export interface UpdateSubjectData {
+  name?: string;
+  cover_image?: string | null;
+  class_id?: number | null;
+  board_id?: number | null;
+  syllabus?: any;
+  is_course?: boolean;
+}
+
+// ================== ENROLLMENTS ==================
 export interface Enrollment {
   id: number;
   student_id: number;
@@ -268,33 +295,16 @@ export interface Enrollment {
   updated_on: string;
   student: {
     id: number;
-    user: {
-      id: number;
-      name: string;
-      email: string;
-      phone: string;
-    };
-    class: {
-      id: number;
-      name: string;
-    } | null;
-    board: {
-      id: number;
-      name: string;
-    } | null;
+    user: { id: number; name: string; email: string; phone: string };
+    class: { id: number; name: string } | null;
+    board: { id: number; name: string } | null;
   };
   subject: {
     id: number;
     name: string;
     is_course: boolean;
-    class: {
-      id: number;
-      name: string;
-    } | null;
-    board: {
-      id: number;
-      name: string;
-    } | null;
+    class: { id: number; name: string } | null;
+    board: { id: number; name: string } | null;
   };
 }
 

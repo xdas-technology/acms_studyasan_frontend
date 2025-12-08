@@ -304,7 +304,7 @@ export default function SubjectDetailPage() {
               </Badge>
             </div>
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 text-gray-600">
                 <UserCheck className="h-5 w-5 text-saBlue/50" />
                 <span className="text-gray-600 font-medium">
                   Assigned Teachers
@@ -455,7 +455,7 @@ export default function SubjectDetailPage() {
         subject.teacher_subject_junctions.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Assigned Teachers</CardTitle>
+              <CardTitle className="text-gray-600 text-xl">Assigned Teachers</CardTitle>
               <CardDescription>
                 Teachers teaching this subject (
                 {subject.teacher_subject_junctions.length})
@@ -473,7 +473,7 @@ export default function SubjectDetailPage() {
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-medium">
+                          <p className="font-medium text-gray-600">
                             {junction.teacher.user.name}
                           </p>
                           <p className="text-sm text-muted-foreground">
@@ -493,7 +493,7 @@ export default function SubjectDetailPage() {
       {subject.enrollments && subject.enrollments.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Enrolled Students</CardTitle>
+            <CardTitle className="text-gray-600 text-xl">Enrolled Students</CardTitle>
             <CardDescription>
               Students enrolled in this subject ({subject.enrollments.length})
             </CardDescription>
@@ -505,12 +505,12 @@ export default function SubjectDetailPage() {
                   <CardContent className="pt-6">
                     <div className="flex items-center space-x-3">
                       <Avatar>
-                        <AvatarFallback className="bg-secondary text-secondary-foreground">
+                        <AvatarFallback className="bg-saBlue/50 text-white">
                           {getInitials(enrollment.student.user.name)}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-medium">
+                        <p className="font-medium text-gray-600">
                           {enrollment.student.user.name}
                         </p>
                         <p className="text-sm text-muted-foreground">

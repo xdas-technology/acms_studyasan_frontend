@@ -54,6 +54,9 @@ import type {
   WeeklyScheduleResponse,
   CanJoinSessionResponse,
   ChatMessagesResponse,
+  Country,
+  State,
+  City
 } from '@/types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
@@ -168,7 +171,7 @@ export const studentService = {
       role: 'STUDENT',
     });
 
-    // Then create the student profile
+    // Then create the student profile with ALL fields including address
     const studentResponse = await api.post('/students', {
       user_id: userResponse.data.data.user.id,
       class_id: data.class_id,
@@ -176,6 +179,12 @@ export const studentService = {
       date_of_birth: data.date_of_birth,
       gender: data.gender,
       school: data.school,
+      blood_group: data.blood_group, // Add blood_group
+      addressLine: data.addressLine, // Add address fields
+      countryId: data.countryId,
+      stateId: data.stateId,
+      cityId: data.cityId,
+      postalCode: data.postalCode,
     });
 
     return studentResponse.data;
@@ -193,7 +202,6 @@ export const studentService = {
     await api.delete(`/students/${id}`);
   },
 };
-
 export const boardService = {
   getAll: async (params?: {
     page?: number;
@@ -773,6 +781,29 @@ export const chatService = {
     const response = await api.get('/admin/chats');
     return response.data;
   },
+  
 };
+
+// Location Service
+export const locationService = {
+  // Get all countries
+  getCountries: async (): Promise<Country[]> => {
+    const response = await api.get('/locations/countries');
+    return response.data.data as Country[];
+  },
+
+  // Get all states in a country
+  getStatesByCountry: async (countryId: number): Promise<State[]> => {
+    const response = await api.get(`/locations/countries/${countryId}/states`);
+    return response.data.data as State[];
+  },
+
+  // Get all cities in a state
+  getCitiesByState: async (stateId: number): Promise<City[]> => {
+    const response = await api.get(`/locations/states/${stateId}/cities`);
+    return response.data.data as City[];
+  },
+};
+
 
 export default api;
