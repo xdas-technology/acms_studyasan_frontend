@@ -222,7 +222,7 @@ export default function TeacherDetailPage() {
             <div className="flex items-center space-x-3">
               <BookOpen className="h-5 w-5 text-saBlue/50" />
               <div>
-                <p className="font-medium">Qualification</p>
+                <p className="font-medium text-gray-600">Qualification</p>
                 <p className="text-muted-foreground">{teacher.qualification || "-"}</p>
               </div>
             </div>
@@ -230,7 +230,7 @@ export default function TeacherDetailPage() {
             <div className="flex items-center space-x-3">
               <BookOpen className="h-5 w-5 text-saBlue/50" />
               <div>
-                <p className="font-medium">Experience</p>
+                <p className="font-medium text-gray-600">Experience</p>
                 <p className="text-muted-foreground">{teacher.experience || "-"}</p>
               </div>
             </div>
@@ -238,7 +238,7 @@ export default function TeacherDetailPage() {
             <div className="flex items-center space-x-3">
               <User className="h-5 w-5 text-saBlue/50" />
               <div>
-                <p className="font-medium">Gender</p>
+                <p className="font-medium text-gray-600">Gender</p>
                 <p className="text-muted-foreground">{getGenderDisplay(teacher.gender)}</p>
               </div>
             </div>
@@ -254,7 +254,7 @@ export default function TeacherDetailPage() {
             <div className="flex items-center space-x-3">
               <IndianRupee className="h-5 w-5 text-saBlue/50" />
               <div>
-                <p className="font-medium">Monthly Salary</p>
+                <p className="font-medium text-gray-600">Monthly Salary</p>
                 <p className="text-muted-foreground">{formatSalary(teacher.salary)}</p>
               </div>
             </div>
@@ -307,7 +307,7 @@ export default function TeacherDetailPage() {
                       <div className="flex items-center space-x-2">
                         <BookOpen className="h-5 w-5 text-primary" />
                         <div>
-                          <p className="font-medium">{j.subject.name}</p>
+                          <p className="font-medium text-gray-600">{j.subject.name}</p>
                           {j.subject.class && (
                             <Badge variant="outline">{j.subject.class.name}</Badge>
                           )}

@@ -11,12 +11,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { studentService, boardService, classService } from '@/services/api';
-import type { Board, Class, CreateStudentData } from '@/types';
+import { studentService, boardService, classService, locationService } from '@/services/api';
+import type { Board, Class, Country, State, City } from '@/types';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
-
+import { Textarea } from '@/components/ui/textarea';
 import SuccessModal from '@/components/ui/successModal';
 import ErrorModal from '@/components/ui/errorModal';
+
+type Gender = "M" | "F" | "OTHER" | null;
 
 export default function CreateStudentPage() {
   const navigate = useNavigate();
@@ -24,29 +26,42 @@ export default function CreateStudentPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [boards, setBoards] = useState<Board[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [states, setStates] = useState<State[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
+
+  const [selectedCountryId, setSelectedCountryId] = useState<number | null>(null);
+  const [selectedStateId, setSelectedStateId] = useState<number | null>(null);
 
   const [error, setError] = useState('');
+  const [errorOpen, setErrorOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const [successOpen, setSuccessOpen] = useState(false);
 
-  const [errorOpen, setErrorOpen] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-
-  const [formData, setFormData] = useState<CreateStudentData>({
+  const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
     password: '',
-    class_id: null,
-    board_id: null,
-    date_of_birth: null,
-    gender: null,
-    school: null,
+    class_id: null as number | null,
+    board_id: null as number | null,
+    date_of_birth: null as string | null,
+    gender: null as Gender,
+    school: null as string | null,
+    blood_group: null as string | null,
+    addressLine: null as string | null,
+    countryId: null as number | null,
+    stateId: null as number | null,
+    cityId: null as number | null,
+    postalCode: null as string | null,
   });
 
+  // ================= FETCH DATA =================
   useEffect(() => {
     fetchBoards();
     fetchClasses();
+    fetchCountries();
   }, []);
 
   const fetchBoards = async () => {
@@ -54,7 +69,7 @@ export default function CreateStudentPage() {
       const response = await boardService.getAll({ limit: 100 });
       setBoards(response.data.data);
     } catch {
-      setErrorMessage("Failed to load boards.");
+      setErrorMessage('Failed to load boards.');
       setErrorOpen(true);
     }
   };
@@ -64,9 +79,66 @@ export default function CreateStudentPage() {
       const response = await classService.getAll({ limit: 100 });
       setClasses(response.data.data);
     } catch {
-      setErrorMessage("Failed to load classes.");
+      setErrorMessage('Failed to load classes.');
       setErrorOpen(true);
     }
+  };
+
+  const fetchCountries = async () => {
+    try {
+      const data = await locationService.getCountries();
+      setCountries(data);
+    } catch {
+      setErrorMessage('Failed to load countries.');
+      setErrorOpen(true);
+    }
+  };
+
+  const fetchStates = async (countryId: number) => {
+    try {
+      const data = await locationService.getStatesByCountry(countryId);
+      setStates(data);
+    } catch {
+      setErrorMessage('Failed to load states.');
+      setErrorOpen(true);
+    }
+  };
+
+  const fetchCities = async (stateId: number) => {
+    try {
+      const data = await locationService.getCitiesByState(stateId);
+      setCities(data);
+    } catch {
+      setErrorMessage('Failed to load cities.');
+      setErrorOpen(true);
+    }
+  };
+
+  // ================= HANDLERS =================
+  const handleChange = <T extends keyof typeof formData>(field: T, value: typeof formData[T]) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value === '' ? null : value,
+    }));
+  };
+
+  const handleCountryChange = (countryId: number) => {
+    handleChange('countryId', countryId);
+    setSelectedCountryId(countryId);
+    setSelectedStateId(null);
+    handleChange('stateId', null);
+    handleChange('cityId', null);
+    setStates([]);
+    setCities([]);
+    fetchStates(countryId);
+  };
+
+  const handleStateChange = (stateId: number) => {
+    handleChange('stateId', stateId);
+    setSelectedStateId(stateId);
+    handleChange('cityId', null);
+    setCities([]);
+    fetchCities(stateId);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -75,10 +147,36 @@ export default function CreateStudentPage() {
     setIsLoading(true);
 
     try {
-      await studentService.create(formData);
-      setSuccessOpen(true); // show success modal
+      console.log('Form data being sent:', formData);
+
+const bloodGroupMap: Record<string, "A_POS" | "A_NEG" | "B_POS" | "B_NEG" | "AB_POS" | "AB_NEG" | "O_POS" | "O_NEG"> = {
+  'A+': 'A_POS',
+  'A-': 'A_NEG',
+  'B+': 'B_POS',
+  'B-': 'B_NEG',
+  'AB+': 'AB_POS',
+  'AB-': 'AB_NEG',
+  'O+': 'O_POS',
+  'O-': 'O_NEG',
+};
+
+const transformedData = {
+  ...formData,
+  blood_group: formData.blood_group ? bloodGroupMap[formData.blood_group] : null,
+  addressLine: formData.addressLine || '',
+  school: formData.school || '',
+  countryId: formData.countryId || 0, // ensure number
+  stateId: formData.stateId || 0,     // ensure number
+  cityId: formData.cityId || 0,       // ensure number
+   postalCode: formData.postalCode || '',
+};
+
+
+
+      await studentService.create(transformedData);
+      setSuccessOpen(true);
     } catch (err: any) {
-      const msg = err.response?.data?.message || "Failed to create student.";
+      const msg = err.response?.data?.message || 'Failed to create student.';
       setErrorMessage(msg);
       setErrorOpen(true);
     } finally {
@@ -86,17 +184,9 @@ export default function CreateStudentPage() {
     }
   };
 
-  const handleChange = (field: keyof CreateStudentData, value: any) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value === '' ? null : value,
-    }));
-  };
-
+  // ================= RENDER =================
   return (
     <div className="space-y-6">
-
-      {/* SUCCESS MODAL */}
       <SuccessModal
         open={successOpen}
         title="Student Created Successfully"
@@ -104,12 +194,11 @@ export default function CreateStudentPage() {
         showButtons={true}
         okText="OK"
         cancelText="Go Back"
-        onConfirm={() => setSuccessOpen(false)} // OK button: stay on page
-        onCancel={() => navigate('/dashboard/students')} // Go Back button
+        onConfirm={() => setSuccessOpen(false)}
+        onCancel={() => navigate('/dashboard/students')}
         onClose={() => setSuccessOpen(false)}
       />
 
-      {/* ERROR MODAL */}
       <ErrorModal
         open={errorOpen}
         title="Error"
@@ -120,7 +209,6 @@ export default function CreateStudentPage() {
         onClose={() => setErrorOpen(false)}
       />
 
-      {/* Header */}
       <div className="flex flex-col space-y-2">
         <Link
           to="/dashboard/students"
@@ -132,34 +220,24 @@ export default function CreateStudentPage() {
 
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-600">Add New Student</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Create a new student account with details
-          </p>
+          <p className="text-muted-foreground mt-1 text-sm">Create a new student account with details</p>
         </div>
       </div>
 
-      {/* Info */}
       <p className="text-sm text-gray-500">All fields required.</p>
 
-      {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid gap-6 md:grid-cols-2">
-
           {/* User Information */}
           <Card className="w-full">
             <CardHeader>
-              <CardTitle className='sm:text-xl text-xl text-gray-600'>User Information</CardTitle>
+              <CardTitle className="sm:text-xl text-xl text-gray-600">User Information</CardTitle>
               <CardDescription>Basic account information</CardDescription>
             </CardHeader>
-
             <CardContent className="space-y-4">
-
               {error && (
-                <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-md">
-                  {error}
-                </div>
+                <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-md">{error}</div>
               )}
-
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-gray-600">
                   Full Name <span className="text-saVividOrange">*</span>
@@ -225,13 +303,14 @@ export default function CreateStudentPage() {
           {/* Student Details */}
           <Card className="w-full">
             <CardHeader>
-              <CardTitle className='sm:text-xl text-xl text-gray-600'>Student Details</CardTitle>
+              <CardTitle className="sm:text-xl text-xl text-gray-600">Student Details</CardTitle>
               <CardDescription>Additional student information</CardDescription>
             </CardHeader>
-
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="class" className="text-gray-600">Class</Label>
+                <Label htmlFor="class" className="text-gray-600">
+                  Class
+                </Label>
                 <Select
                   value={formData.class_id?.toString() || ''}
                   onValueChange={(value) => handleChange('class_id', parseInt(value))}
@@ -251,7 +330,9 @@ export default function CreateStudentPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="board" className="text-gray-600">Board</Label>
+                <Label htmlFor="board" className="text-gray-600">
+                  Board
+                </Label>
                 <Select
                   value={formData.board_id?.toString() || ''}
                   onValueChange={(value) => handleChange('board_id', parseInt(value))}
@@ -271,10 +352,12 @@ export default function CreateStudentPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="gender" className="text-gray-600">Gender</Label>
+                <Label htmlFor="gender" className="text-gray-600">
+                  Gender
+                </Label>
                 <Select
                   value={formData.gender || ''}
-                  onValueChange={(value) => handleChange('gender', value)}
+                  onValueChange={(value) => handleChange('gender', value as Gender)}
                   disabled={isLoading}
                 >
                   <SelectTrigger id="gender">
@@ -289,7 +372,9 @@ export default function CreateStudentPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="date_of_birth" className="text-gray-600">Date of Birth</Label>
+                <Label htmlFor="date_of_birth" className="text-gray-600">
+                  Date of Birth
+                </Label>
                 <Input
                   id="date_of_birth"
                   type="date"
@@ -300,7 +385,9 @@ export default function CreateStudentPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="school" className="text-gray-600">School</Label>
+                <Label htmlFor="school" className="text-gray-600">
+                  School
+                </Label>
                 <Input
                   id="school"
                   placeholder="ABC High School"
@@ -309,11 +396,139 @@ export default function CreateStudentPage() {
                   disabled={isLoading}
                 />
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="blood_group" className="text-gray-600">
+                  Blood Group
+                </Label>
+                <Select
+                  value={formData.blood_group || ''}
+                  onValueChange={(value) => handleChange('blood_group', value)}
+                  disabled={isLoading}
+                >
+                  <SelectTrigger id="blood_group">
+                    <SelectValue placeholder="Select blood group" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((bg) => (
+                      <SelectItem key={bg} value={bg}>
+                        {bg}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Address Section */}
+          <Card className="w-full md:col-span-2">
+            <CardHeader>
+              <CardTitle className="sm:text-xl text-xl text-gray-600">Address</CardTitle>
+              <CardDescription>Student address details</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="addressLine" className="text-gray-600">
+                  Address
+                </Label>
+                <Textarea
+                  id="addressLine"
+                  placeholder="123 Main Street, Apartment, etc."
+                  value={formData.addressLine || ''}
+                  onChange={(e) => handleChange('addressLine', e.target.value)}
+                  disabled={isLoading}
+                  className="w-full"
+                  rows={3}
+                />
+              </div>
+
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="country" className="text-gray-600">
+                    Country
+                  </Label>
+                  <Select
+                    value={formData.countryId?.toString() || ''}
+                    onValueChange={(value) => handleCountryChange(parseInt(value))}
+                    disabled={isLoading}
+                  >
+                    <SelectTrigger id="country">
+                      <SelectValue placeholder="Select country" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {countries.map((country) => (
+                        <SelectItem key={country.id} value={country.id.toString()}>
+                          {country.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="state" className="text-gray-600">
+                    State
+                  </Label>
+                  <Select
+                    value={formData.stateId?.toString() || ''}
+                    onValueChange={(value) => handleStateChange(parseInt(value))}
+                    disabled={!selectedCountryId || isLoading}
+                  >
+                    <SelectTrigger id="state">
+                      <SelectValue placeholder="Select state" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {states.map((state) => (
+                        <SelectItem key={state.id} value={state.id.toString()}>
+                          {state.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="city" className="text-gray-600">
+                    City
+                  </Label>
+                  <Select
+                    value={formData.cityId?.toString() || ''}
+                    onValueChange={(value) => handleChange('cityId', parseInt(value))}
+                    disabled={!selectedStateId || isLoading}
+                  >
+                    <SelectTrigger id="city">
+                      <SelectValue placeholder="Select city" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {cities.map((city) => (
+                        <SelectItem key={city.id} value={city.id.toString()}>
+                          {city.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="postalCode" className="text-gray-600">
+                    Postal Code
+                  </Label>
+                  <Input
+                    id="postalCode"
+                    placeholder="123456"
+                    value={formData.postalCode || ''}
+                    onChange={(e) => handleChange('postalCode', e.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row sm:justify-end gap-3">
           <Button
             type="button"
